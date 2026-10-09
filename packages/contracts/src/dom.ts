@@ -25,7 +25,13 @@ export const CHAT_FLOW_SELECTOR = '[data-chat-flow]'
 export const CHAT_CALL_SELECTOR = '[data-chat-call-id]'
 /** One thinking row; its phase is its data-state attribute. */
 export const THINK_ROW_SELECTOR = '[data-variant="think"]'
-/** The phase value while the model is still thinking. */
+/**
+ * The phase of a row that has one: a thinking row, and a tool call's own view
+ * (the page's own phase is `data-phase`, D44). The values are the host's —
+ * `running` while that piece of work is under way.
+ */
+export const ROW_PHASE_ATTRIBUTE = 'data-state'
+/** The phase value while the model is still thinking, or a call is still running. */
 export const RUNNING_STATE = 'running'
 /** The markdown layer marks the container with this while an assistant message streams. */
 export const STREAMING_SELECTOR = '[data-streaming]'
@@ -112,6 +118,11 @@ export const PROCESS_ACTIVITY_SELECTOR = 'button[data-process-activity]'
 export const TURN_PROCESS_SELECTOR = 'button[data-turn-process]'
 /** A fold: the host's DisclosureRow, and every other control that opens and closes something. */
 export const DISCLOSURE_ROW_SELECTOR = '[data-disclosure-row]'
+/**
+ * On a row the host lets the reader open and fold: present while it stands
+ * open. A thinking row is folded when this is absent.
+ */
+export const EXPANDED_ATTRIBUTE = 'data-expanded'
 export const FOLD_TOGGLE_SELECTOR = '[aria-expanded]'
 /** Controls whose opening is skipped whole: a turn's header and its trigger notice. */
 export const FOLD_SKIPPED_CONTROL_SELECTOR = '[data-turn-process], [data-turn-trigger]'
@@ -186,6 +197,8 @@ export const HEADER_CORNER_SELECTOR = '[class*="headerCorner"]'
 export const CONVERSATION_HEADER_SELECTOR = '[class*="_header"]'
 /** The view-tab strip inside the header, whose box the band placement keeps clear of. */
 export const VIEW_TABS_STRIP_SELECTOR = '[class*="_tabs"]'
+/** The same strip by the host's own mark; its `role="tab"` children list the registered views in order. */
+export const VIEW_TABLIST_SELECTOR = '[data-conversation-tabs]'
 
 /* ---------- the document, the shell and the browser API ---------- */
 

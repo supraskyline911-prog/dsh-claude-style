@@ -232,4 +232,33 @@ module.exports = {
       sendRedraw.ghost === true && sendRedraw.hidden === true && sendRedraw.visibility === 'hidden',
       JSON.stringify(sendRedraw))
   },
+  'chat-reader'(r) {
+    basicChecks(r)
+    const reader = r.reader || {}
+    const view = reader.view || {}
+    check('the redraw tier registers the reading view under Chat\'s id, name and place, with the official seats it lends',
+      view.order === 0 && view.locale === 'chat' && view.label === 'Chat'
+        && JSON.stringify(view.children) === JSON.stringify(reader.expectedSeats),
+      JSON.stringify(view))
+    check('the reading view is the registration that renders for Chat',
+      reader.renders === true, JSON.stringify(reader.renders))
+    check('the view reuses the host\'s own Chat callbacks for files, forks, history and images',
+      reader.reused === true, JSON.stringify(reader.reused))
+    check('the host\'s official entries are mirrored into the view\'s seats, the kinds the view draws itself left out',
+      JSON.stringify(reader.mirrored) === JSON.stringify({ tools: ['bash'], nodes: ['context'] }),
+      JSON.stringify(reader.mirrored))
+    const tabs = reader.tabs || {}
+    check('the host\'s own Chat tab is hidden, and a strip left with one tab with it',
+      JSON.stringify(tabs.chatOnly) === JSON.stringify({ hidden: [1], lone: true })
+        && JSON.stringify(tabs.developer) === JSON.stringify({ hidden: [1], lone: false })
+        && JSON.stringify(tabs.developerOff) === JSON.stringify({ hidden: [1], lone: true })
+        && JSON.stringify(tabs.withoutChat) === JSON.stringify({ hidden: [], lone: false }),
+      JSON.stringify(tabs))
+    check('the view stands only over the host\'s Chat view, whose callbacks it borrows',
+      reader.withoutChat === 0 && reader.withChat === 1, JSON.stringify({ without: reader.withoutChat, with: reader.withChat }))
+    check('dsh-better-display\'s reading view takes precedence, and the reader comes back once it leaves',
+      reader.peerYield === 0 && reader.peerBack === 1, JSON.stringify({ yield: reader.peerYield, back: reader.peerBack }))
+    check('leaving the redraw tier takes the view, its seats and the tab marks down',
+      reader.offEntries === 0 && reader.offMarks === 0, JSON.stringify({ entries: reader.offEntries, marks: reader.offMarks }))
+  },
 }

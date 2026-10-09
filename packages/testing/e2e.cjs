@@ -17,7 +17,7 @@
  * writes can reach another.
  *
  * Usage: node packages/testing/e2e.cjs [--scenario <name>[,<name>…]] [--headed] [--out <dir>] [--delay <ms>]
- *        scenarios: conversation, tool, send, scroll, contract, importance, shots
+ *        scenarios: conversation, narrow, tool, scroll, send, contract, reader, stepDisplay, importance, shots
  *        (default: every scenario)
  */
 'use strict'
@@ -25,6 +25,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { start, openPage, waitForSkin, dismissOverlays, firstRunOverlayText } = require('./dsh-web.cjs')
 const { importanceScenario } = require('./importance.cjs')
+const { readerScenario } = require('./reader-view.cjs')
+const { stepDisplayScenario } = require('./step-display.cjs')
+const { sendPrompt, waitForTurn } = require('./prompt.cjs')
 const { startMockLlm } = require('./mock-llm.cjs')
 const { CANVAS } = require('../../scripts/shoot.cjs')
 const { sanitizePage } = require('../../scripts/shared/privacy.cjs')
@@ -104,24 +107,7 @@ async function readFlow(page) {
   }, HOST)
 }
 
-/** Type a prompt into the composer and send it, the way a reader does. */
-async function sendPrompt(page, text) {
-  await page.waitForSelector(HOST.composer, { timeout: 60000 })
-  await page.click(HOST.composer)
-  await page.keyboard.type(text)
-  await page.waitForTimeout(200)
-  await page.keyboard.press('Enter')
-  // The host echoes the submission as its own row; the row is attached even
-  // while the send flight hides it, so this waits for attachment alone. Without
-  // it the turn never started, and the timeout further on would say nothing
-  // about why.
-  try {
-    await page.waitForSelector(HOST.userRow, { state: 'attached', timeout: 20000 })
-  } catch {
-    throw new Error('the composer did not hand the prompt to a turn (no user row appeared)')
-  }
-}
-
+/** Type a prompt into the composer and send it, the way a reader does (packages/testing/prompt.cjs). */
 /**
  * What the page looked like when a scenario failed: a picture, the console
  * problems, and the markers a timeout usually turns on — the composer's own
@@ -152,12 +138,6 @@ async function captureFailure(session, out, name) {
   ].join('\n')
   fs.writeFileSync(path.join(out, `${name}-failure.txt`), `${report}\n`)
   process.stdout.write(`  failure evidence: ${file}\n`)
-}
-
-/** Wait until the turn has settled: its tail row is there and nothing streams. */
-async function waitForTurn(page, timeoutMs = 90000) {
-  await page.waitForSelector(TURN_TAIL, { timeout: timeoutMs })
-  await page.waitForFunction((selector) => document.querySelectorAll(selector).length === 0, HOST.streaming, { timeout: timeoutMs })
 }
 
 /**
@@ -608,6 +588,10 @@ const SCENARIOS = {
       ]
     },
   },
+  /** The redraw tier's reading view: the live fold, the word fade, the completed turn (packages/testing/reader-view.cjs, D57). */
+  reader: readerScenario({ check }),
+  /** The reading view under the host's work-details modes (packages/testing/step-display.cjs, D57). */
+  stepDisplay: stepDisplayScenario({ check }),
   /** Every `!important` the skin writes is needed on the real page (packages/testing/importance.cjs, D51). */
   importance: importanceScenario({ check, sendPrompt, waitForTurn, host: HOST }),
   /** Both palettes captured to the run's out directory and swept for personal data. */
@@ -634,12 +618,7 @@ async function runScenario(name, options) {
   const scenario = SCENARIOS[name]
   if (scenario === undefined) throw new Error(`no scenario named "${name}" (${Object.keys(SCENARIOS).join(', ')})`)
   const mock = await startMockLlm({ script: scenario.script, delayMs: scenario.delayMs ?? options.delayMs })
-  const patch = [
-    '- id: llm-deepseek',
-    '  config:',
-    `    baseURL: ${mock.url}`,
-    '    apiKeyEnv: DSH_E2E_MOCK_KEY',
-  ].join('\n')
+  const patch = ['- id: llm-deepseek', '  config:', `    baseURL: ${mock.url}`, '    apiKeyEnv: DSH_E2E_MOCK_KEY', ...scenario.patch ?? []].join('\n')
   const host = await start({ patch, env: { DSH_E2E_MOCK_KEY: 'mock' }, home: options.home, resetState: true })
   process.stdout.write(`\n== ${name} ==  mock ${mock.url}  host ${host.url}\n`)
   /** Where the scenario is, so a hang in the log says which step it never left. */
@@ -714,7 +693,7 @@ async function main() {
       + `${unknown.length > 0 ? `; named there but missing here: ${unknown.join(', ')}` : ''}`
       + `${unnamed.length > 0 ? `; run here but unnamed there: ${unnamed.join(', ')}` : ''}`)
   }
-  const names = (argOf('scenario') ?? 'conversation,narrow,tool,send,scroll,contract,importance,shots').split(',').map((name) => name.trim()).filter(Boolean)
+  const names = (argOf('scenario') ?? 'conversation,narrow,tool,send,scroll,contract,reader,stepDisplay,importance,shots').split(',').map((name) => name.trim()).filter(Boolean)
   const out = path.resolve(argOf('out') ?? DEFAULT_OUT)
   const options = {
     headed: args.includes('--headed'),
@@ -738,7 +717,10 @@ async function main() {
   }
   const failed = results.reduce((sum, result) => sum + result.failed, 0)
   process.stdout.write(`\n${failed === 0 ? 'E2E PASS' : 'E2E FAIL'} — ${results.length} scenarios, ${failed} failed checks; traces in ${out}\n`)
-  if (failed > 0) process.exitCode = 1
+  // A scenario leaves a handle behind on a slow runner — the CI job walked every
+  // scenario in minutes and then sat until its own cap, because the process had
+  // finished and its event loop had not. The exit code is the result.
+  process.exit(failed > 0 ? 1 : 0)
 }
 
 main().catch((error) => {

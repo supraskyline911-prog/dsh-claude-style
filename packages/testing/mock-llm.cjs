@@ -80,6 +80,19 @@ const SCRIPTS = {
     ],
     auxiliary: { text: ['Scripted inspection'] },
   },
+  /**
+   * Several rounds in one turn: a thought and a tool, a thought and a note with
+   * another tool, then the answer. The reader gets an intermediate output with
+   * process on both sides of it, which is the shape the process lane folds.
+   */
+  process: {
+    conversation: [
+      { thinking: ['先看清工作区再动手。'], tool: { name: 'glob', input: { pattern: '*.json' } } },
+      { thinking: ['列举结果回来了，先记一句中间结论。'], text: ['先记一句中间结论。\n\n'], tool: { name: 'glob', input: { pattern: '*.md' } } },
+      { thinking: ['信息够了，可以收尾。'], text: ['这是最终答案。\n\n', '- 第一点\n', '- 第二点\n'] },
+    ],
+    auxiliary: { text: ['Scripted process'] },
+  },
   /** Enough streamed lines to push the column past the viewport edge. */
   long: {
     conversation: [
@@ -174,13 +187,14 @@ async function streamReply(res, reply, delayMs) {
 
 /**
  * The reply one request gets: conversation replies in order, the auxiliary
- * answer for the shell's own calls — those carry no tool catalog — and the last
- * conversation reply once the script runs out.
+ * answer for the shell's own calls — those carry no tool catalog — and the
+ * script from its first reply again once it runs out, so every turn of a
+ * scenario carries the same work.
  */
 function replyFor(script, request, state) {
   if (request.tools === undefined || request.tools.length === 0) return script.auxiliary
   const replies = script.conversation
-  const reply = replies[Math.min(state.conversation, replies.length - 1)]
+  const reply = replies[state.conversation % replies.length]
   state.conversation += 1
   return reply
 }

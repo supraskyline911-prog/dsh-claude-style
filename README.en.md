@@ -71,7 +71,7 @@ What the plugin does and what each setting changes is documented: [Features](doc
 
 ## Fonts
 
-> **Important: the Anthropic fonts are not bundled with the npm package.** They are available for download in this repository under [`packages/assets/src/fonts/anthropic/`](packages/assets/src/fonts/anthropic/). You can either install them on your system, or skip the install entirely — drop the two `.ttf` files into `$DSH_HOME/dsh-claude-style/fonts/` (`~/.dsh/dsh-claude-style/fonts/` when `DSH_HOME` is unset) and the host will serve them as webfonts (the files are identical, so the result is the same). Either way, refresh or restart the web UI for the fonts to take effect.
+> **Important: Anthropic Sans and Serif are Anthropic's property, licensed for personal use only, and are not covered by this project's MIT license. They are not bundled in the npm package; this repository provides the font files for download.**
 
 | Font | Used for | File |
 |---|---|---|
@@ -87,26 +87,7 @@ To enable the Anthropic fonts, choose one of the following:
 
 ① Install them on your system — on Windows, double-click each `.ttf` and choose "Install"; on macOS, import them with Font Book.
 
-② Skip the install — copy the `.ttf` files into `$DSH_HOME/dsh-claude-style/fonts/`, then refresh the page.
-
-> The Anthropic Sans and Serif fonts are the property of Anthropic, licensed for personal use only, and are not covered by this project's MIT license.
-
-## Skin center handoff
-
-This theme is also offered as a **skin** in the DSH Skin Center. Selecting it there hands the whole page to this
-plugin; selecting another skin or the official default takes the page back without a reload.
-
-- The answer holds from the first frame: the Skin Center stamps `html[data-dsh-skin]` into the served document, so a
-  page that boots with a skin already painting never flashes a frame of this theme first.
-- While another skin paints the page this theme mounts no stylesheet, installs no feature and claims no document
-  attribute at all. It takes the page back when the skin leaves and gives it back when a skin returns, a skin
-  picked after the page loaded included.
-- A wallpaper plugin is not another owner: while a wallpaper renders this theme keeps working, as described in
-  [Settings](docs/SETTINGS.en.md) under "Alongside other theme plugins".
-- The settings page and every stored preference survive the handoff. A skin taking the screen does not uninstall
-  anything, and closing the Skin Center does not throw away what you configured here.
-- `data-dsh-claude-style-handoff` on `body` marks a build that can do this; the Skin Center offers the row only
-  while it is there.
+② Skip the install — copy the `.ttf` files into `$DSH_HOME/dsh-claude-style/fonts/`.
 
 ## Installation
 
@@ -116,6 +97,7 @@ Install this repository's version from GitHub:
 dsh plugin --profile web add supraskyline911-prog/dsh-claude-style
 ```
 
+You can also select the theme in the Skin Center provided by the dsh-web-all plugin after installation.
 Keep only one theme enabled at a time. dsh ≥ 0.1.7 is required, and a restart of DeepSeek Harness brings the full feature set.
 
 ## Documentation
@@ -132,6 +114,8 @@ Keep only one theme enabled at a time. dsh ≥ 0.1.7 is required, and a restart 
 The conversation navigator's opening list, keyboard jumps and landing line follow SherUnlocked-4869's [dsh-plugin-msg-nav](https://github.com/SherUnlocked-4869/dsh-plugin-msg-nav) (MIT).
 
 The animation frames of Deepy the pixel whale come from the Deepy whale theme pack drawn by calmly-eating-bugs ([@wp3171216237](https://github.com/wp3171216237)), and ship with the plugin by the author's permission. Many thanks to the author! GIFs of all 20 animations, contributed by the author, are in [docs/gifs/](docs/gifs/).
+
+The enhanced animations in the chat area are modified from [dsh-chat-ux](https://github.com/alm-allen/dsh-chat-ux) (MIT), and the redraw animations from [dsh-better-display](https://github.com/aa2246740/dsh-better-display) (MIT).
 
 The pixel crab (Clawd) is a character of Anthropic, and all rights in it remain with Anthropic. Its laptop animation is taken from Claude Code; the animations of its other states are drawn by this project after that character. The crab's frames are not covered by the MIT license (see [LICENSE](LICENSE)). This plugin is an unofficial fan work, not affiliated with or endorsed by Anthropic.
 

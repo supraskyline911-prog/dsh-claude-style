@@ -1,7 +1,7 @@
 {
   "name": "dsh-claude-style",
   "description": "DSH Claude Style: a desktop theme and session toolkit for DeepSeek Harness, with two palettes and custom model, permission, and composer controls.",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "type": "module",
   "main": "lib/host/index.js",
   "icon": "lib/claude-mark.svg",
@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
     "changelog": "node scripts/changelog.mjs",
     "changelog:check": "node scripts/changelog.mjs --check",
     "docs:index": "node scripts/decisions-index.mjs",
@@ -54,7 +55,8 @@
     "CHANGELOG.md",
     "README.md",
     "README.en.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "keywords": [
     "dsh",
@@ -80,7 +82,20 @@
     "url": "https://github.com/supraskyline911-prog/dsh-claude-style/issues"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-agent": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-attachment": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-locale": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-store": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-chat": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-session": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-tool": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-session": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-util-values": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-util-workspace-path": "0.2.1-alpha.1",
     "@types/node": "^26.6.4",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",

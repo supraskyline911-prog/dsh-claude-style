@@ -11,6 +11,7 @@
  *   packages/client/src/entry.ts                 apply(): the FEATURES table, the deferred features installed from their chunks (D39)
  *   packages/client/src/constants.ts             constants; also evaluated here for the stylesheet gates
  *   scripts/chunks.mjs                           the deferred features' chunks (D39), routed like the assets
+ *   scripts/build-cache.mjs                      the vectors and brotli payloads kept between runs in .debug/build-cache/
  *   packages/client/src/core/ packages/client/src/shared/ packages/client/src/features/<name>/   the modules, TypeScript, strict
  *   packages/client/src/features/<dir>/<main>.manifest.ts   each feature's manifest (D42), read by scripts/shared/read-manifests.cjs
  *   packages/client/src/theme/*.css and the feature stylesheets   concatenated by rank (THEME_SHEETS and the manifests),
@@ -32,18 +33,26 @@
  * are in scripts/build-checks.mjs, the stylesheets' in scripts/css.mjs; the three
  * generated modules are scripts/virtual-modules.mjs.
  *
+ * The order of the writes is part of the contract: every asset and the host
+ * half land before `lib/client.js`, because the client half of the hot reload
+ * watches that one file — a page that swaps to it must find this build's chunks
+ * already on disk and already in the manifest (D39).
+ *
  * `packages/client/data/model-descriptions.json` is not bundled: it is validated
  * (scripts/model-copy.mjs) and copied to `lib/`, where the host half serves it to
  * the browser half at runtime. Model copy is data, so it must not enter the bundle (D5).
  */
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
+import { homedir } from 'node:os'
 import path from 'node:path'
 import vm from 'node:vm'
+import { brotliCompressSync } from 'node:zlib'
 import esbuild from 'esbuild'
 import { PNG } from 'pngjs'
 import { buildHostHalf } from '../packages/host/build.mjs'
 import { buildFonts, checkClaimed, checkSheetPixels, checkSheets, planAssets, routeText, vectorizeSheet, writeAssets } from '../packages/assets/assets.mjs'
+import { openBuildCache } from './build-cache.mjs'
 import { checkContracts, checkCycles, checkListed, checkManifests, checkScrollOwner, checkTypes } from './build-checks.mjs'
 import { chunkFiles, chunkModules, ownModuleIds, splitChunks } from './chunks.mjs'
 import { TOKEN_SHEET, buildStylesheet, loadTokens, writeTokenTable } from './css.mjs'
@@ -67,6 +76,10 @@ const BRAND_ASSETS = path.join(ASSETS, 'brand')
 const STYLE_GUIDE = path.join(ROOT, 'docs', 'STYLE.md')
 const LIB = path.join(ROOT, 'lib')
 const OUT = path.join(LIB, 'client.js')
+/** The slow steps' results between runs (scripts/build-cache.mjs). */
+const CACHE_DIR = path.join(ROOT, '.debug', 'build-cache')
+/** The code that checks and vectorizes a sheet: part of every vector's cache key. */
+const ASSETS_MODULE = path.join(ROOT, 'packages', 'assets', 'assets.mjs')
 
 /**
  * The plugin icon the 0.1.7 plugin manifest reads.
@@ -130,7 +143,41 @@ const PACKAGE = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf
 const PACKAGE_ID = PACKAGE.name
 
 /** The packages the host's loader hands the factory's `require`; never bundled. */
-const HOST_PACKAGES = ['react', 'react-dom/client', '@deepseek-ai/dsh-client-ui-primitives']
+const HOST_PACKAGES = ['react', 'react/jsx-runtime', 'react-dom/client', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-store']
+
+/**
+ * Whether this build keeps the assets the build before it shipped (D39).
+ *
+ * A linked checkout is what the flag is for: its live page boots the bundle
+ * that was on disk when the host composed the graph, and after a rebuild that
+ * page asks for the chunk names of the previous build. Explicit rather than
+ * automatic — a published package must carry exactly its own assets — and inert
+ * in CI for the same reason.
+ */
+const RETAIN_ASSETS = process.env.DSH_CLAUDE_STYLE_DEBUG === '1' && process.env.CI === undefined
+
+/**
+ * The DSH profiles that run this checkout as the plugin, by profile name.
+ *
+ * A profile's `node_modules/<package>` resolving to this directory is what the
+ * loader runs — a `link:` install points there, a registry install does not.
+ * The build log names the profiles, so why a kept or replaced asset set matters
+ * is never a guess.
+ *
+ * @returns the profile directory names, empty when this checkout is linked nowhere.
+ */
+function linkedProfiles() {
+  const profiles = path.join(process.env.DSH_HOME ?? path.join(homedir(), '.dsh'), 'profiles')
+  if (!fs.existsSync(profiles)) return []
+  const self = fs.realpathSync(ROOT)
+  const linked = []
+  for (const entry of fs.readdirSync(profiles, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const installed = path.join(profiles, entry.name, 'node_modules', PACKAGE_ID)
+    if (fs.existsSync(installed) && fs.realpathSync(installed) === self) linked.push(entry.name)
+  }
+  return linked
+}
 
 /** Stands where the build id goes until the bundle's own hash is known. */
 const BUILD_ID_SLOT = '%%BUILD_ID%%'
@@ -242,19 +289,29 @@ function loadCombines(plan, claimed) {
  * and rebuilt as SVG over the sprite's own cell layout. The vector is what the
  * asset plan ships under the sheet's name; the PNG is an input of the build.
  *
+ * A vector is cached under the PNG's bytes, its table entry, the scale, the
+ * gutter and the code of packages/assets/assets.mjs: a hit stands for a sheet
+ * that already passed checkSheetPixels with exactly these inputs.
+ *
+ * @param cache - the build cache (scripts/build-cache.mjs).
  * @returns the vectors to ship, keyed by their path under packages/assets/src/, and the
  *     PNGs they take the place of.
  */
-function vectorizeDeepySheets() {
+function vectorizeDeepySheets(cache) {
   const dir = path.join(ASSETS, 'mascot', 'deepy')
   const sheets = CONSTANTS.DEEPY_SHEETS
   checkSheets('DEEPY_SHEETS', sheets, [52, 52], dir, (name) => [`${name}.png`])
+  const code = fs.readFileSync(ASSETS_MODULE)
   const generated = new Map()
   const replaced = new Set()
   for (const [name, sheet] of Object.entries(sheets)) {
-    const image = PNG.sync.read(fs.readFileSync(path.join(dir, `${name}.png`)))
-    checkSheetPixels('DEEPY_SHEETS', name, image, sheet, CONSTANTS.DEEPY_SCALE)
-    const { svg } = vectorizeSheet(image, sheet.box, CONSTANTS.DEEPY_SCALE, CONSTANTS.DEEPY_GUTTER)
+    const png = fs.readFileSync(path.join(dir, `${name}.png`))
+    const shape = JSON.stringify({ sheet, scale: CONSTANTS.DEEPY_SCALE, gutter: CONSTANTS.DEEPY_GUTTER })
+    const svg = cache.get('deepy-vector', [code, png, shape], () => {
+      const image = PNG.sync.read(png)
+      checkSheetPixels('DEEPY_SHEETS', name, image, sheet, CONSTANTS.DEEPY_SCALE)
+      return Buffer.from(vectorizeSheet(image, sheet.box, CONSTANTS.DEEPY_SCALE, CONSTANTS.DEEPY_GUTTER).svg, 'utf8')
+    }).toString('utf8')
     generated.set(`mascot/deepy/${name}.svg`, svg)
     replaced.add(`mascot/deepy/${name}.png`)
   }
@@ -271,7 +328,8 @@ async function main() {
   // Every image, its content hash and its address (D38). Nothing is written
   // yet: the plan is read by everything below, and a refusal anywhere in this
   // build must leave lib/ as it was.
-  const deepy = vectorizeDeepySheets()
+  const cache = openBuildCache(CACHE_DIR)
+  const deepy = vectorizeDeepySheets(cache)
   const plan = planAssets({ assetsDir: ASSETS, generated: deepy.generated, replaced: deepy.replaced })
   const claimed = new Set()
   const images = {}
@@ -348,6 +406,8 @@ async function main() {
     write: false,
     metafile: true,
     logLevel: 'silent',
+    // TSX compiles to the automatic runtime the host's loader provides (D57), as tsconfig.json declares.
+    jsx: 'automatic',
     external: HOST_PACKAGES,
     // The factory around the body is part of the output, so the source map
     // counts its lines.
@@ -429,12 +489,6 @@ async function main() {
   if (!fs.existsSync(iconSource)) throw new Error(`build: packages/assets/src/brand/${ICON_SOURCE} is missing`)
 
   fs.mkdirSync(LIB, { recursive: true })
-  fs.writeFileSync(OUT, bundle)
-  fs.writeFileSync(`${OUT}.map`, sourceMap)
-  console.log(`built lib/client.js (${Buffer.byteLength(bundle)} bytes, build ${buildId}) from packages/client/src/ (${bundled.size} modules + ${sheets.length} stylesheets + ${Object.keys(combines).length} lockups)`)
-  for (const [id, url] of Object.entries(chunkUrls)) {
-    console.log(`built the deferred feature "${id}" as ${url} (${Buffer.byteLength(plan.entries.get(`chunks/${id}.js`).text)} bytes)`)
-  }
 
   fs.writeFileSync(path.join(LIB, MODEL_COPY), copyText)
   console.log(`built lib/${MODEL_COPY} (${familyRules} family rules, ${copy.tiers.length} tier rules)`)
@@ -445,14 +499,39 @@ async function main() {
   fs.copyFileSync(iconSource, iconTarget)
   console.log(`built lib/${ICON_FILE} (${fs.statSync(iconTarget).size} bytes) from packages/assets/src/brand/${ICON_SOURCE}`)
 
-  const assets = writeAssets(LIB, plan)
+  // Brotli's output is fixed by its input and the library's version, so both key it.
+  const compress = (bytes) => cache.get('brotli', [process.versions.brotli, bytes], () => brotliCompressSync(bytes))
+  const assets = writeAssets(LIB, plan, { retain: RETAIN_ASSETS, compress })
   console.log(`built lib/assets/ (${assets.files} routed of ${plan.entries.size} assets, ${assets.bytes} bytes) from packages/assets/src/`)
+  if (assets.kept > 0) {
+    console.log(`kept ${assets.kept} asset(s) an earlier build shipped (DSH_CLAUDE_STYLE_DEBUG=1): a page running that build still asks for them`)
+  }
 
   const fonts = buildFonts({ assetsDir: ASSETS, libDir: LIB })
   console.log(`built lib/fonts/ (${fonts.files} files, ${fonts.bytes} bytes) from packages/assets/src/fonts/`)
 
   const host = await buildHostHalf({ outDir: LIB })
   console.log(`built lib/host/ (${host.files} modules) from packages/host/src/`)
+
+  // Last, always: this is the file a running page's client hot reload watches,
+  // and the generation it swaps to reads its chunks from this build. Writing it
+  // after every asset means those chunks are already on disk and already in the
+  // manifest when the page asks for them (D39).
+  fs.writeFileSync(OUT, bundle)
+  fs.writeFileSync(`${OUT}.map`, sourceMap)
+  console.log(`built lib/client.js (${Buffer.byteLength(bundle)} bytes, build ${buildId}) from packages/client/src/ (${bundled.size} modules + ${sheets.length} stylesheets + ${Object.keys(combines).length} lockups)`)
+  for (const [id, url] of Object.entries(chunkUrls)) {
+    console.log(`built the deferred feature "${id}" as ${url} (${Buffer.byteLength(plan.entries.get(`chunks/${id}.js`).text)} bytes)`)
+  }
+  const pruned = cache.prune()
+  const { hits, misses } = cache.counts()
+  console.log(`build cache .debug/build-cache/: ${hits} reused, ${misses} computed${pruned > 0 ? `, ${pruned} unused for a day removed` : ''}`)
+  if (!RETAIN_ASSETS) {
+    const linked = linkedProfiles()
+    if (linked.length > 0) {
+      console.log(`linked into ${linked.join(', ')}: a rebuild replaces lib/assets, and a page still running the previous bundle asks for chunks this build replaced — build with DSH_CLAUDE_STYLE_DEBUG=1 to keep them`)
+    }
+  }
 }
 
 await main()
