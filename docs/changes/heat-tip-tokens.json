@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-09",
+  "group": "improvements",
+  "order": 0,
+  "external": false,
+  "zh": "新会话页用量面板的热力图，鼠标停在某一天上弹出的那一行从「9 月 9 日 — 15,955」（当天结算的消息条数）改为「9 月 9 日 — 1.2M Token」（当天消耗的 Token），与网格的颜色深浅读的是同一个数。",
+  "en": "The new-conversation page's usage panel heat map now reads the day's tokens in its hover tip — \"Sep 9 — 1.2M tokens\" — instead of the number of settled messages on that day, so the tip and the cell's colour step both read the same figure."
+}
