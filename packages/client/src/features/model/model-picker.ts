@@ -1,10 +1,10 @@
 import { AUTO_POPOVER_ALL } from '../../constants'
-import { MODEL_EMPTY_LABEL, MODEL_FALLBACK_LABEL, MODEL_LOADING_LABEL, MODEL_MORE_LABEL, MODEL_OFFICIAL_GROUP, MODEL_TRIGGER_LABEL } from './copy-fallbacks'
+import { MODEL_ALL_PROVIDERS_LABEL, MODEL_CURRENT_LABEL, MODEL_EMPTY_LABEL, MODEL_FALLBACK_LABEL, MODEL_LOADING_LABEL, MODEL_TRIGGER_LABEL } from './copy-fallbacks'
 import { activeLocale, copyLabel } from '../../core/i18n'
 import { loadModelCopy } from '../../core/model-copy'
 import { readPrefs } from '../../core/prefs'
 import { createModelCatalog } from './catalog'
-import { byModelId, createModelRows } from './rows'
+import { byModelId, createModelRows, MODEL_CLOSE_DELAY } from './rows'
 import { buildElement, closestFrom, setAttributeIfChanged } from '../../shared/dom'
 import { POPOVER_MARGIN, POPOVER_OPEN_DELAY, closeOtherPopovers, createHoverIntent, positionAnchoredPopover, registerPopover, removeStrayNodes, setMenuPopoverOpen, unregisterPopover } from '../../shared/popover'
 import type { HostContext } from '../../core/host'
@@ -34,9 +34,9 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
    * The host's model seat is a click-triggered two-pane menu (Model /
    * Effort rows drilling into their own lists). The skin replaces it with
    * a Claude-style picker: hovering the trigger opens the first level —
-   * the DeepSeek official provider's models, a divider, then the
-   * reasoning-effort row (when the current model offers one) and a More
-   * models row; both open their second level BESIDE the first level.
+   * one folder per provider, a rule between the quick ones and the rest, and
+   * the model in force named under the list; hovering a folder opens that
+   * provider's models in the second card, beside the first.
    *
    * Data and submission ride the host's own per-session ModelDirectory
    * (`ctx.modelDirectories`), the same store the host's menu and the
@@ -48,22 +48,14 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
   let modelPop: HTMLElement | null = null
   let modelSubPop: HTMLElement | null = null
   let modelBody: HTMLElement | null = null
-  let modelFooter: HTMLElement | null = null
   let modelSubBody: HTMLElement | null = null
   /** The host slot the seat lives in; the effort picker anchors there too. */
   let modelSlot: HTMLElement | null = null
-  /**
-   * The picker is two cards wide, and the level-2 card only cancels a pending
-   * close once the pointer is ON it — so the grace has to cover the journey
-   * from a level-1 row, across the gap, onto the sub card. At the shared 100ms
-   * a slow traverse ran it out and both cards folded up mid-journey.
-   */
-  const MODEL_CLOSE_DELAY = 150
+  /** The provider whose models the second card holds; null while it is closed. */
+  let modelSubProvider: string | null = null
   /** Pending fold of level 2 while the pointer is still crossing level 1. */
   let subFoldTimer: ReturnType<typeof setTimeout> | null = null
   const modelHoverIntent = createHoverIntent(openModelPopover, closeModelIfAway, POPOVER_OPEN_DELAY, MODEL_CLOSE_DELAY)
-  /** The More-models cell drills in on the same dwell/grace as the trigger. */
-  const modelSubHoverIntent = createHoverIntent(openModelSub, closeModelIfAway, POPOVER_OPEN_DELAY, MODEL_CLOSE_DELAY)
   let modelBodySig = ''
   let modelSubSig = ''
   /**
@@ -83,9 +75,9 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
   const modelRows = createModelRows({
       ctx,
       pickModel,
-      subHoverIntent: modelSubHoverIntent,
-      isSubOpen() { return modelSubPop !== null && modelSubPop.getAttribute('data-open') === 'true' },
-      closeSub: closeModelPopovers,
+      closeIfAway: closeModelIfAway,
+      subProvider() { return modelSubProvider },
+      closeSub: closeModelSub,
       openSub: openModelSub,
       /**
        * The peak rate meter is its own feature (packages/client/src/features/peakrate/):
@@ -152,6 +144,12 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
 
   /** Close on leave, but treat the gap between the two cards as still inside. */
   function closeModelIfAway() {
+    // With no tracked pointer there is nothing to test against — a click
+    // opened the card, so the pointer never crossed the trigger and the
+    // tracker never saw it. Folding on that reading closes a card the reader
+    // is standing on; the leave that really means "away" comes later as a
+    // mouseleave carrying a pointer of its own.
+    if (pointer === null) return
     if (pointerInPicker()) {
       scheduleCloseModel()
       return
@@ -162,6 +160,20 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
   function closeModelPopovers() {
     cancelCloseModel()
     if (modelPop) setMenuPopoverOpen(modelPop, false)
+    closeModelSub()
+  }
+
+  /**
+   * Fold the second card on its own. The first card is the hover-intent host
+   * and stays up: a folder row that hands its card back when the pointer is
+   * only crossing level 1 would close the picker under the reader.
+   */
+  function closeModelSub() {
+    if (subFoldTimer !== null) {
+      clearTimeout(subFoldTimer)
+      subFoldTimer = null
+    }
+    modelSubProvider = null
     if (modelSubPop) setMenuPopoverOpen(modelSubPop, false)
   }
 
@@ -180,7 +192,7 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
         pending.catch(() => { /* the store's error surface covers a failure */ })
       }
     }
-    if (modelSubPop) setMenuPopoverOpen(modelSubPop, false)
+    closeModelSub()
     // A card opening repaints from scratch: its countdowns were drawn at
     // whatever minute it was last on screen, and a closed card is not part of
     // any signature (rateSignature).
@@ -188,12 +200,20 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     renderModelBody()
     positionModelPopovers()
     if (modelPop) setMenuPopoverOpen(modelPop, true)
+    // Pointer tracking binds on the NEXT pass: the position pass reads the
+    // card's open attribute, so it runs while the card is still closed and
+    // would leave tracking off. A leave that then arrives finds no pointer and
+    // no card, reads as "away" and folds a card the reader is standing on.
+    trackPointerWhileOpen()
   }
 
-  function openModelSub() {
+  /** Open one provider's models in the second card. */
+  function openModelSub(providerId: string) {
     cancelCloseModel()
+    modelSubProvider = providerId
     modelSubSig = ''
     renderModelSub()
+    renderModelBody()
     // Open BEFORE placing: the placement pass reads the sub card only while
     // it is marked open, so positioning first would skip it and leave the
     // card at its previous position — every open has to place it fresh.
@@ -209,6 +229,12 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     // wrapper drops it.
     const pending = dir.select({ provider, model: modelId })
     if (pending && typeof pending.catch === 'function') pending.catch(() => {})
+    // The card stays up while the pointer is still over it, so changing one
+    // model and then another is a single gesture. A pick commits and the host
+    // re-renders the seat under the pointer, so the reader has not moved:
+    // folding here read as the picker closing by itself. Only a pointer that
+    // has already left gets the close.
+    if (pointerInPicker()) return
     closeModelPopovers()
   }
 
@@ -222,23 +248,6 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     // A rejected selection is reported by the host's toast (see pickModel).
     const pending = dir.select(selection)
     if (pending && typeof pending.catch === 'function') pending.catch(() => {})
-  }
-
-  /**
-   * The footer holds the divider and the More-models row, and nothing else:
-   * the effort slider moved to its own card (packages/client/src/features/effort/effort-picker.ts).
-   * Rebuilt only when the row set changes — the divider exists to close the
-   * list off from what follows it, so with no More-models row it is a stray
-   * line and is not drawn either.
-   */
-  function layoutModelFooter(showMore: boolean) {
-    if (!modelFooter) return
-    const stale: ChildNode[] = []
-    for (let child = modelFooter.firstChild; child !== null; child = child.nextSibling) stale.push(child)
-    for (let i = 0; i < stale.length; i++) modelFooter.removeChild(stale[i])
-    if (!showMore) return
-    modelFooter.appendChild(buildElement('div', 'dsh-claude-model-divider'))
-    modelFooter.appendChild(modelRows.buildModelCell(copyLabel('moreLabel', MODEL_MORE_LABEL)))
   }
 
   /**
@@ -256,14 +265,17 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     return up ? `${peakrate.epoch()}/${Math.floor(Date.now() / 60000)}` : `${peakrate.epoch()}`
   }
 
-  /** Level 1: the provider sections, the divider, More models. */
+  /**
+   * Level 1: one folder per provider, a rule between the quick ones and the
+   * rest, and the model in force named under the list.
+   */
   function renderModelBody() {
     if (!modelBody) return
     const snap = modelCatalog.snapshot()
     const status = snap ? snap.status : 'idle'
     const groups = (snap && snap.groups) || []
     const current = modelCatalog.current(snap)
-    let sig = [status, activeLocale(), current ? `${current.group.id}/${current.model.id}` : '', readPrefs().quickProviders.join(','), rateSignature()].join('|')
+    let sig = [status, activeLocale(), current ? `${current.group.id}/${current.model.id}` : '', modelSubProvider === null ? '' : `sub:${modelSubProvider}`, readPrefs().quickProviders.join(','), rateSignature()].join('|')
     for (let g = 0; g < groups.length; g++) sig += `;${groups[g].id}:${groups[g].models.length}`
     if (sig === modelBodySig) {
       return
@@ -279,89 +291,56 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     const seated = groups.length > 0 && current !== null
     if (!seated && (status === 'idle' || status === 'loading' || status === 'selecting')) {
       modelBody.appendChild(buildElement('div', 'dsh-claude-popover-status', copyLabel('loading', MODEL_LOADING_LABEL)))
-      layoutModelFooter(false)
     } else {
-      const sections = modelRows.levelOneSections(groups)
-      if (sections.length === 0) {
+      const folders = modelRows.providerFolders(groups)
+      if (folders.length === 0) {
         modelBody.appendChild(buildElement('div', 'dsh-claude-popover-status', copyLabel('empty', MODEL_EMPTY_LABEL)))
       } else {
-        for (let s = 0; s < sections.length; s++) {
-          const section = sections[s]
-          // The official source needs no naming, and the first section needs
-          // no rule: a bare line above the list would be one line too many.
-          const sectionLabel = section.id === MODEL_OFFICIAL_GROUP ? '' : (section.name || section.id)
-          if (sectionLabel !== '' || s > 0) modelBody.appendChild(modelRows.buildProviderRule(sectionLabel))
-          const sectionModels = section.models.slice().sort(byModelId)
-          for (let m = 0; m < sectionModels.length; m++) {
-            const selected = current !== null && current.group.id === section.id && current.model.id === sectionModels[m].id
-            modelBody.appendChild(modelRows.buildModelOption(section, sectionModels[m], selected, true))
+        // The rule marks where the quick providers end. It needs something on
+        // both sides: alone under the list or alone at the top it is a stray
+        // line, so it is drawn only when it separates two halves.
+        const quick = modelRows.quickFolderCount(groups)
+        for (let f = 0; f < folders.length; f++) {
+          if (f === quick && quick > 0 && quick < folders.length) {
+            modelBody.appendChild(modelRows.buildProviderRule(copyLabel('allProvidersLabel', MODEL_ALL_PROVIDERS_LABEL)))
           }
+          const folder = folders[f]
+          const selected = current !== null && current.group.id === folder.id
+          modelBody.appendChild(modelRows.buildProviderFolder(folder, selected, modelSubProvider === folder.id))
         }
-      }
-      // The current seat is surfaced under the list when none of the sections
-      // above already carries it, so the row the seat is read from is always
-      // on screen. Its provider rides a rule of its own rather than trailing
-      // the model in parentheses — the same idiom the sections use. It stays
-      // above the divider: the divider closes the model list, so anything
-      // that belongs to the list has to sit on its side of it.
-      let currentListed = false
-      for (let c = 0; c < sections.length; c++) {
-        if (current !== null && sections[c].id === current.group.id) currentListed = true
-      }
-      if (current !== null && !currentListed) {
-        // The divider above already draws a line, so a provider that needs no
-        // naming (the official source) adds nothing here.
-        const currentRuleName = current.group.id === MODEL_OFFICIAL_GROUP ? '' : (current.group.name || current.group.id)
-        if (currentRuleName !== '') modelBody.appendChild(modelRows.buildProviderRule(currentRuleName))
-        // Through the same row builder as every other row, so this one carries
-        // the same brand hook, description and peak rate meter.
-        modelBody.appendChild(modelRows.buildCurrentOption(current.group, current.model))
-      }
-      // The divider closes the model list and the More-models row follows it;
-      // both live in the footer, OUTSIDE the scroll area — the list above
-      // scrolls under them while the row stays reachable. The effort slider
-      // is not here any more: it has its own trigger and card.
-      if (modelFooter) {
-        // "More models" carries what level 1 does not. With every provider
-        // already on screen the row would only open an empty card, so it goes
-        // away with the last remaining provider.
-        const showMore = modelRows.remainingGroups(groups, sections).length > 0
-        // The divider exists to close the list off from what follows it. With
-        // no More-models row there is nothing left to close off, and a bare
-        // line under the list reads as a stray rule. layoutModelFooter owns
-        // that judgement.
-        layoutModelFooter(showMore)
+        // The model in force is named under the folders, above the rule: it is
+        // the seat the reader is on, and it carries the description and the
+        // peak rate meter the folder rows do not have room for.
+        if (current !== null) {
+          modelBody.appendChild(modelRows.buildProviderRule(copyLabel('currentLabel', MODEL_CURRENT_LABEL)))
+          modelBody.appendChild(modelRows.buildCurrentOption(current.group, current.model))
+        }
       }
     }
   }
 
-  /** Level 2: the providers level 1 does NOT show, each headed by its name. */
+  /** Level 2: the models of the folder that is open, headed by its name. */
   function renderModelSub() {
     if (!modelSubBody) return
     const snap = modelCatalog.snapshot()
     const groups = (snap && snap.groups) || []
     const current = modelCatalog.current(snap)
-    // What level 2 holds depends on what level 1 lists, so the signature has
-    // to carry level 1's provider ids as well.
-    const sections = modelRows.levelOneSections(groups)
-    const listed = []
-    for (let s0 = 0; s0 < sections.length; s0++) listed.push(sections[s0].id)
-    let sig2 = `more|${listed.join(',')}|${rateSignature()}`
+    const group = groups.find(g => g.id === modelSubProvider) ?? null
+    // The card holds one provider's models, so its signature is that provider
+    // and the catalog counts — not level 1's list.
+    let sig2 = `folder|${modelSubProvider === null ? '' : modelSubProvider}|${rateSignature()}`
     for (let g = 0; g < groups.length; g++) sig2 += `;${groups[g].id}:${groups[g].models.length}`
     if (current) sig2 += `#${current.group.id}/${current.model.id}`
     if (sig2 === modelSubSig) return
     modelSubSig = sig2
     while (modelSubBody.firstChild) modelSubBody.removeChild(modelSubBody.firstChild)
-    const rest = modelRows.remainingGroups(groups, sections)
-    for (let g2 = 0; g2 < rest.length; g2++) {
-      const group = rest[g2]
-      if (group.models.length === 0) continue
+    if (group !== null && group.models.length > 0) {
       const groupSection = buildElement('div', 'dsh-claude-model-group-section')
       const groupRow = buildElement('div', 'dsh-claude-model-group-row')
       const groupLabel = buildElement('div', 'dsh-claude-model-group')
       // The group label is the provider's name alone: a mark there would repeat
       // what the rows below already carry inside their lockups.
-      groupLabel.appendChild(buildElement('span', 'dsh-claude-model-group-name', group.name))
+      groupLabel.appendChild(buildElement('span', 'dsh-claude-model-group-name', group.name || group.id))
       groupRow.appendChild(groupLabel)
       groupSection.appendChild(groupRow)
       // A provider's models read in id order, so the list is scannable and stays
@@ -380,6 +359,9 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
   }
 
   function positionModelPopovers() {
+    // Pointer tracking follows the card's own open attribute, never the other
+    // way round: the placement pass below reads that attribute to decide
+    // whether the second card needs a spot, so it has to run first.
     trackPointerWhileOpen()
     if (!modelBtn || !modelPop) return
     const pos = positionAnchoredPopover(modelBtn, modelPop, { side: 'above', gap: 6 })
@@ -416,32 +398,26 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
       modelBody = document.createElement('div')
       modelBody.className = 'dsh-claude-popover-body'
       modelPop.appendChild(modelBody)
-      modelFooter = document.createElement('div')
-      modelFooter.className = 'dsh-claude-model-footer'
-      modelPop.appendChild(modelFooter)
       modelPop.addEventListener('mouseenter', cancelCloseModel)
-      // The second level belongs to its More-models cell: while it is open,
-      // the pointer landing anywhere else on the first level (a model row,
-      // bare card) folds it — the first level itself stays open, it is the
-      // hover-intent host. Delegated mouseover, not mouseenter: moving from
-      // the cell to a model row never crosses the popover's boundary, so a
-      // boundary event would never fire.
+      // The second level belongs to the folder that opened it: the pointer
+      // landing anywhere else on the first level folds it. Moving between two
+      // folder rows never crosses the popover's boundary, so a mouseenter here
+      // would never see it — the delegated mouseover does.
       modelPop.addEventListener('mouseover', e => {
+        if (closestFrom(e.target, '.dsh-claude-model-cell')) {
+          // A timer from crossing the bare card must not fold the submenu once
+          // the pointer lands on the folder it belongs to.
+          cancelCloseModel()
+          return
+        }
         if (modelSubPop === null || modelSubPop.getAttribute('data-open') !== 'true') return
-        if (closestFrom(e.target, '.dsh-claude-model-cell')) return
         // Delayed, not immediate: the sub card sits BESIDE level 1, so a
-        // pointer on its way from the cell to the sub crosses level 1's own
+        // pointer on its way from the folder to the sub crosses level 1's own
         // rows — folding on the spot made that journey impossible at any
         // speed. Folding now waits out the same grace, and stands down only
-        // when the pointer has meanwhile reached the sub card itself: the
-        // pointer still being on level 1 means it left the More-models cell,
-        // which is exactly when level 2 folds.
+        // when the pointer has meanwhile reached the sub card itself.
         if (subFoldTimer !== null) clearTimeout(subFoldTimer)
-        subFoldTimer = setTimeout(() => {
-          subFoldTimer = null
-          if (pointerInCardBox(modelSubPop)) return
-          if (modelSubPop !== null) setMenuPopoverOpen(modelSubPop, false)
-        }, MODEL_CLOSE_DELAY)
+        subFoldTimer = setTimeout(closeModelSub, MODEL_CLOSE_DELAY)
       })
       modelPop.addEventListener('mouseleave', scheduleCloseModel)
       document.body.appendChild(modelPop)
@@ -476,8 +452,8 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     modelPop = null
     modelSubPop = null
     modelBody = null
-    modelFooter = null
     modelSubBody = null
+    modelSubProvider = null
     modelBodySig = ''
     modelSubSig = ''
     cancelCloseModel()

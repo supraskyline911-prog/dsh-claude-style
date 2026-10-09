@@ -1,7 +1,8 @@
 /* ---------- Claude Code layout: model picker ---------- */
-/* Replaces the host's two-pane model menu: level 1 carries the current
-   provider's models, a divider, the effort row and a More models row; both
-   rows open their level 2 beside this popover. The card is the shared popover
+/* Replaces the host's two-pane model menu: level 1 carries one folder per
+   provider, the rule between the quick ones and the rest, and the model in
+   force named under them; hovering a folder opens that provider's models in
+   the second card, beside this one. The card is the shared popover
    card (shared/popover.css); what is the picker's own is below. */
 body[data-dsh-claude-style] .dsh-claude-model-popover {
   position: fixed;
@@ -18,10 +19,9 @@ body[data-dsh-claude-style] .dsh-claude-model-popover {
   gap: 6px;
   transform-origin: bottom right;
 }
-/* Level 1 splits into a scrollable list and a pinned footer: the model rows
-   scroll under the divider / effort / more-models rows, which never leave the
-   viewport edge of the card. Only the first level does this — the sub popover
-   keeps scrolling as one card, with its provider labels pinned (below). */
+/* Level 1 scrolls inside its body, so its rows scroll under the card's own
+   edges. Only the first level does this — the sub popover keeps scrolling as
+   one card, with its provider label pinned (below). */
 body[data-dsh-claude-style] .dsh-claude-model-popover:not(.dsh-claude-model-popover-sub) {
   overflow: hidden;
 }
@@ -30,16 +30,9 @@ body[data-dsh-claude-style] .dsh-claude-model-popover:not(.dsh-claude-model-popo
   min-height: 0;
   overflow-y: auto;
 }
-body[data-dsh-claude-style] .dsh-claude-model-footer {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 /* The sub popover is taller than the first level and sized by its content: the
-   cap is only the viewport, so a short provider list does not leave a tall empty
-   card. Provider labels stay pinned to the top while the list scrolls. */
+   cap is only the viewport, so a short model list does not leave a tall empty
+   card. Its provider label stays pinned to the top while the list scrolls. */
 body[data-dsh-claude-style] .dsh-claude-model-popover-sub {
   padding-top: 0;
 }
@@ -174,14 +167,9 @@ body[data-dsh-claude-style] .dsh-claude-model-desc {
    and the divider that closes the model list. Same colour, same thickness, same
    insets — the only difference left is that the header's line starts after the
    provider's name, which is the point of that row. */
-body[data-dsh-claude-style] .dsh-claude-model-divider,
 body[data-dsh-claude-style] .dsh-claude-model-rule::after {
   height: 1px !important;
   background: var(--dsw-alias-border-l1, #e8e6dc) !important;
-}
-body[data-dsh-claude-style] .dsh-claude-model-divider {
-  margin: 2px 4px !important;
-  flex: none !important;
 }
 /* The provider header: the name first, then the rule running to the right edge.
    The line is what is left of that row, not a separate full-width rule above it
@@ -202,11 +190,18 @@ body[data-dsh-claude-style] .dsh-claude-model-rule::after {
 body[data-dsh-claude-style] .dsh-claude-model-rule-name {
   flex: none !important;
   font-size: 11px !important;
-  line-height: 14px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
   color: var(--dsw-alias-label-caption, #a6a094) !important;
-  letter-spacing: 0.02em !important;
 }
-/* Level-2 row: label + chevron; hover opens its own level. */
+/* Level-1 folder row: provider name, model count, chevron. The count sits
+   between the name and the chevron, and the check the selected provider carries
+   takes the slot every other row's check takes, so a folder reads as the same
+   kind of row as a model — one slot further to the right. A folder whose
+   models the second card is holding keeps the hover fill while the pointer is
+   elsewhere, so the reader knows which folder the open card belongs to. */
 body[data-dsh-claude-style] .dsh-claude-model-cell {
   display: flex !important;
   align-items: center !important;
@@ -219,20 +214,45 @@ body[data-dsh-claude-style] .dsh-claude-model-cell {
   background: transparent !important;
   color: var(--dsw-alias-label-primary, #141413) !important;
   font-size: 13px !important;
+  font-family: var(--dsw-font-family);
   text-align: left !important;
   cursor: pointer !important;
   box-sizing: border-box !important;
+  transition: background-color 0.12s ease;
 }
-body[data-dsh-claude-style] .dsh-claude-model-cell:hover {
+body[data-dsh-claude-style] .dsh-claude-model-cell:hover,
+body[data-dsh-claude-style] .dsh-claude-model-cell[data-open="true"] {
   background: var(--dsh-claude-hover-bg, rgba(0, 0, 0, 0.08)) !important;
+}
+body[data-dsh-claude-style] .dsh-claude-model-cell:focus-visible,
+body[data-dsh-claude-style] .dsh-claude-model-option:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary, #d97757);
+  outline-offset: -2px;
 }
 body[data-dsh-claude-style] .dsh-claude-model-cell-label {
   flex: 1 !important;
   min-width: 0 !important;
+  font-weight: 500 !important;
+}
+/* How many models the folder holds: a quiet badge before the chevron, the same
+   pill the quick-provider picker puts on its rows. */
+body[data-dsh-claude-style] .dsh-claude-model-cell-count {
+  flex: none !important;
+  font-size: 11px !important;
+  line-height: 14px !important;
+  padding: 0 6px !important;
+  border-radius: 7px !important;
+  background: var(--dsw-alias-interactive-bg-hover, rgba(0, 0, 0, 0.08)) !important;
+  color: var(--dsw-alias-label-secondary, #787672) !important;
 }
 body[data-dsh-claude-style] .dsh-claude-model-cell-chevron {
   flex: none !important;
   display: inline-flex !important;
   align-items: center !important;
   color: var(--dsw-alias-label-caption, #a6a094) !important;
+}
+/* The folder that is open turns its chevron the way the reader would expect a
+   disclosure to turn. */
+body[data-dsh-claude-style] .dsh-claude-model-cell[data-open="true"] .dsh-claude-model-cell-chevron {
+  color: var(--dsw-alias-label-primary, #141413) !important;
 }

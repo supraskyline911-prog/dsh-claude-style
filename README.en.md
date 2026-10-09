@@ -2,17 +2,15 @@
 
 # DSH Claude Style
 
-**A theme plugin that brings the look and feel of Claude Code Desktop to the DeepSeek Harness Web GUI.**
+**A desktop theme and session toolkit for DeepSeek Harness, maintained by [@supraskyline911-prog](https://github.com/supraskyline911-prog).**
 
-> **Claude Code Desktop, right inside DSH.**
+> **Two palettes, with model, permission, and session controls built around DSH.**
 
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.en.md) [![简体中文](https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-red.svg)](README.md)
 
-[![version](https://img.shields.io/npm/v/dsh-claude-style?style=flat&label=version&color=D97757)](https://www.npmjs.com/package/dsh-claude-style)
-[![downloads](https://img.shields.io/npm/dm/dsh-claude-style?style=flat&label=downloads&color=D97757)](https://www.npmjs.com/package/dsh-claude-style)
-[![GitHub stars](https://img.shields.io/github/stars/Nwflower/dsh-claude-style?style=flat&label=%E2%98%85&color=08C)](https://github.com/Nwflower/dsh-claude-style)
-[![dsh.so install](https://www.dsh.so/badge/install/dsh-claude-style.svg)](https://www.dsh.so/artifact/dsh-claude-style/)
-[![license](https://img.shields.io/badge/license-MIT-2EA44F?style=flat)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/supraskyline911-prog/dsh-claude-style?style=flat&label=%E2%98%85&color=D97757)](https://github.com/supraskyline911-prog/dsh-claude-style)
+[![maintainer](https://img.shields.io/badge/maintainer-supraskyline911--prog-D97757?style=flat)](https://github.com/supraskyline911-prog)
+[![license](https://img.shields.io/badge/license-MIT-D97757?style=flat)](LICENSE)
 
 </div>
 
@@ -77,11 +75,11 @@ What the plugin does and what each setting changes is documented: [Features](doc
 
 | Font | Used for | File |
 |---|---|---|
-| Anthropic Sans Web Text | Interface / UI | [`packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf) |
-| Anthropic Serif Web Text | Conversation body / Markdown | [`packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf) |
-| JetBrains Mono Variable | Code / code blocks | [`packages/assets/src/fonts/JetBrainsMonoVariable.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/JetBrainsMonoVariable.ttf), [`packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf) |
-| Inter | Interface when Anthropic Sans is absent | [`packages/assets/src/fonts/InterVariable.woff2`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/InterVariable.woff2) |
-| Noto Serif | Conversation body when Anthropic Serif is absent | [`packages/assets/src/fonts/NotoSerifVariable.woff2`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/NotoSerifVariable.woff2) |
+| Anthropic Sans Web Text | Interface / UI | [`packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf) |
+| Anthropic Serif Web Text | Conversation body / Markdown | [`packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf) |
+| JetBrains Mono Variable | Code / code blocks | [`packages/assets/src/fonts/JetBrainsMonoVariable.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/JetBrainsMonoVariable.ttf), [`packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf) |
+| Inter | Interface when Anthropic Sans is absent | [`packages/assets/src/fonts/InterVariable.woff2`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/InterVariable.woff2) |
+| Noto Serif | Conversation body when Anthropic Serif is absent | [`packages/assets/src/fonts/NotoSerifVariable.woff2`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/NotoSerifVariable.woff2) |
 
 JetBrains Mono, Inter and Noto Serif are licensed under the SIL Open Font License 1.1 and ship with the npm package; nothing to set up. Inter and Noto Serif nearly match the two Anthropic fonts in letter height and width, so without the Anthropic fonts they stand in and the interface and conversation text keep their layout. Both carry only the Latin characters the Anthropic fonts cover; Chinese text keeps using the system's Chinese fonts.
 
@@ -112,20 +110,11 @@ plugin; selecting another skin or the official default takes the page back witho
 
 ## Installation
 
-1. From the official plugin page, add the plugin below and it installs.
-
-```
-dsh-claude-style
-```
-
-2. From a terminal:
+Install this repository's version from GitHub:
 
 ```bash
-dsh plugin --profile web add dsh-claude-style                  # npm package (recommended)
-dsh plugin --profile web add Nwflower/dsh-claude-style         # GitHub source
+dsh plugin --profile web add supraskyline911-prog/dsh-claude-style
 ```
-
-3. From the [plugin market](https://github.com/dsh-market/dsh-market)
 
 Keep only one theme enabled at a time. dsh ≥ 0.1.7 is required, and a restart of DeepSeek Harness brings the full feature set.
 
@@ -150,8 +139,8 @@ The pixel crab (Clawd) is a character of Anthropic, and all rights in it remain 
 
 > Running several themes at once? Try [dsh-skin-manager](https://github.com/xiaoyangcheng84-svg/dsh-skin-manager) — it switches between all installed themes from a single settings page.
 
-> Want to import your Claude Code / Codex session history into DSH and keep the conversation going? Try the author's other plugin, [dsh-chat-import](https://github.com/Nwflower/dsh-chat-import).
+> To import Claude Code / Codex session history into DSH, see [dsh-chat-import](https://github.com/Nwflower/dsh-chat-import).
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Nwflower/dsh-claude-style&type=Date)](https://star-history.com/#Nwflower/dsh-claude-style&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=supraskyline911-prog/dsh-claude-style&type=Date)](https://star-history.com/#supraskyline911-prog/dsh-claude-style&Date)

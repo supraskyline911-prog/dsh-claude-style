@@ -328,6 +328,10 @@ export function install(ctx: HostContext, ui: FeatureUi<typeof manifest>) {
     const aria = `${copyLabel('effortLabel', MODEL_EFFORT_LABEL)} ${info.label}`
     setAttributeIfChanged(effortBtn, 'aria-label', aria)
     if (effortSlider !== null) effortSlider.update()
+    // The trigger lives on <body>, outside the slider's root, so the top rung's
+    // marker never reaches it on its own: the level name in the composer's row
+    // takes the same violet the card's does.
+    effortBtn.toggleAttribute('data-apex', effortSlider !== null && effortSlider.apex())
     positionEffortTrigger()
 
     if (effortPop !== null && effortPop.getAttribute('data-open') === 'true') positionEffortPopover()

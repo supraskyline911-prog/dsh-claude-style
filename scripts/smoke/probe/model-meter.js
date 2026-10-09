@@ -1,11 +1,12 @@
 /**
  * The model menu and the peak rate meter on its rows: the host's model seat is
  * put on the page, the picker's trigger is pressed, and both levels are read
- * back — what each row carries and where the meter stands in it.
+ * back — the provider folders of the first level, then the models of the folder
+ * that is opened, with what each row carries and where the meter stands in it.
  *
- * The page's model directory puts the model in force in a provider level 1 does
- * not list, so the picker appends the seat's own row at the bottom of that
- * level: the row this case exists for.
+ * The page's model directory puts the model in force in a provider the quick
+ * list does not name, so level 1 lists that provider as a folder of its own and
+ * names the model in force under the list.
  */
 (function () {
   var probe = window.__dshSmokeProbe
@@ -23,7 +24,7 @@
       document.body.appendChild(card)
       await sleep(400)
 
-      /** Every row one card holds, with the meter's own place in it. */
+      /** Every model row one card holds, with the meter's own place in it. */
       var readRows = function (card) {
         var rows = []
         if (card === null) return rows
@@ -61,22 +62,71 @@
         return rows
       }
 
+      /** Every provider folder level 1 holds, with the mark on the one in use. */
+      var readFolders = function (card) {
+        var folders = []
+        if (card === null) return folders
+        var cells = card.querySelectorAll('.dsh-claude-model-folder')
+        for (var i = 0; i < cells.length; i++) {
+          var label = cells[i].querySelector('.dsh-claude-model-cell-label')
+          var count = cells[i].querySelector('.dsh-claude-model-cell-count')
+          folders.push({
+            name: label === null ? '' : label.textContent,
+            count: count === null ? '' : count.textContent,
+            selected: cells[i].getAttribute('aria-checked') === 'true',
+            open: cells[i].getAttribute('data-open') === 'true',
+            chevron: cells[i].querySelector('.dsh-claude-model-cell-chevron svg') !== null,
+            height: Math.round(cells[i].getBoundingClientRect().height),
+          })
+        }
+        return folders
+      }
+
       var trigger = document.querySelector('.dsh-claude-model-btn')
       if (trigger !== null) trigger.click()
       await sleep(400)
-      var levelOne = readRows(document.querySelector('.dsh-claude-model-popover:not(.dsh-claude-model-popover-sub)'))
+      var firstCard = document.querySelector('.dsh-claude-model-popover:not(.dsh-claude-model-popover-sub)')
+      var levelOne = readRows(firstCard)
 
-      // The More-models cell opens the second level, beside the first.
-      var cell = document.querySelector('.dsh-claude-model-cell')
-      if (cell !== null) cell.click()
+      // The rule above the model in force, named under the folders.
+      var rules = []
+      if (firstCard !== null) {
+        var named = firstCard.querySelectorAll('.dsh-claude-model-rule')
+        for (var n = 0; n < named.length; n++) {
+          rules.push(named[n].textContent.trim())
+        }
+      }
+
+      // The second card belongs to the folder: a click on a folder opens that
+      // provider's models beside the first level. The official service is the
+      // one opened, so the card holds a model a profile claims and one no
+      // profile claims.
+      var cells = firstCard === null ? [] : firstCard.querySelectorAll('.dsh-claude-model-folder')
+      var openedName = null
+      if (cells.length > 0) {
+        var label = cells[0].querySelector('.dsh-claude-model-cell-label')
+        openedName = label === null ? null : label.textContent
+        cells[0].click()
+      }
       await sleep(300)
 
+      // The folders are read back after the open: opening repaints level 1, so
+      // the node that was clicked is no longer the one on screen.
       r.modelMeter = {
         trigger: trigger !== null,
+        folders: readFolders(document.querySelector('.dsh-claude-model-popover:not(.dsh-claude-model-popover-sub)')),
+        rules: rules,
         levelOne: levelOne,
-        // The last row of level 1 is the seat's own: a provider level 1 does
-        // not list, so the picker adds that row under the list.
+        // The last row of level 1 is the model in force, named under the list.
         currentRow: levelOne.length === 0 ? null : levelOne[levelOne.length - 1],
+        openedFolder: openedName,
+        openedMarked: (function () {
+          var after = readFolders(document.querySelector('.dsh-claude-model-popover:not(.dsh-claude-model-popover-sub)'))
+          for (var i = 0; i < after.length; i++) {
+            if (after[i].name === openedName && after[i].open === true) return true
+          }
+          return false
+        })(),
         levelTwo: readRows(document.querySelector('.dsh-claude-model-popover-sub')),
       }
       card.remove()

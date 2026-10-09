@@ -1,6 +1,7 @@
 /* ---------- Claude Code layout: permission segments ---------- */
 /* The shipped access control is one popup-select button; it is replaced by
-   a Read | Edit | Auto | Yolo segmented control over presets — for
+   a Plan | Accept edits | Auto | Bypass permissions | Yolo (browser)
+   segmented control over presets — for
    as long as the permission control is installed to stand in for it. The
    host's button is the one packages/client/src/features/composer/composer.ts marks as the
    access control. */
@@ -124,4 +125,3 @@ body[data-dsh-claude-style] .dsh-claude-perm-popover {
   gap: 6px;
   transform-origin: bottom left;
 }
-

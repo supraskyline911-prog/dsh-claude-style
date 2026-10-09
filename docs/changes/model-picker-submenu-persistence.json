@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-09",
+  "group": "fixes",
+  "order": 1,
+  "external": false,
+  "zh": "模型选择器的供应商子菜单在指针横穿主列表时不再短暂收起；移动到供应商行或旁侧的模型卡片会取消待执行的收起计时。",
+  "en": "Provider model lists no longer collapse while the pointer crosses the first card; entering a provider row or the adjacent model card cancels the pending fold."
+}

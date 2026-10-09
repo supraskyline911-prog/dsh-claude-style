@@ -17,11 +17,11 @@ export default {
   description: {
     zh: {
       title: '模型选择器',
-      text: '输入区的模型菜单换成两级卡片：第一级是官方服务与你挑的快捷供应商，每个模型带厂商标志与一句说明，第二级是其余模型。',
+      text: '输入区的模型菜单换成文件夹式的两级卡片：第一级每个供应商一个文件夹，带模型数量与当前选中标记，悬停展开；第二级是该供应商的模型，每个带厂商标志与一句说明。',
     },
     en: {
       title: 'Model picker',
-      text: 'The composer\'s model menu becomes a two-level card: the first level holds the official service and the quick providers you picked, each model with its vendor mark and a line of description; the second level holds the rest.',
+      text: 'The composer\'s model menu becomes a two-level card of folders: the first level is one folder per provider, with its model count and a mark on the one in use, and hovering a folder opens its models in the second card beside it, each with its vendor mark and a line of description.',
     },
   },
 } satisfies FeatureManifest

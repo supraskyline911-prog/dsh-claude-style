@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-09",
+  "group": "improvements",
+  "order": 1,
+  "external": false,
+  "zh": "模型选择器的供应商行与模型行采用主题界面的字体；分组标签使用统一的小型标题样式，键盘焦点使用当前配色的强调色，Claude 与 DeepSeek 两套配色都保持一致。",
+  "en": "Provider and model rows use the theme's interface font; section labels follow its compact heading style, and keyboard focus uses the active palette's accent in both Claude and DeepSeek palettes."
+}

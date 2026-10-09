@@ -8,48 +8,63 @@ function byName(rows) {
 
 module.exports = {
   /**
-   * The model menu's rows and the peak rate meter every one of them carries: an
-   * official model a profile claims, one no profile claims, the seat's own row
-   * at the bottom of level 1 (whose provider that level does not list), and a
-   * level-2 row.
+   * The model menu's folders, the model in force named under them, and the peak
+   * rate meter every model row carries: an official model a profile claims, one
+   * no profile claims, the seat's own row, and the same rows again in the
+   * second card a folder opens.
    */
   'model-meter'(r) {
     basicChecks(r)
     const meter = r.modelMeter || {}
+    const folders = meter.folders || []
     const levelOne = meter.levelOne || []
     const one = byName(levelOne)
     const two = byName(meter.levelTwo)
-    check('the picker draws level 1 with the seat\'s own row under the list',
-      levelOne.length === 3 && one['V4.1 Flash'] !== undefined && one['Kimi K3'] !== undefined && one['GLM-5.3'] !== undefined,
+    check('level 1 lists one folder per provider, the official service first, each with a chevron and its model count',
+      folders.length === 2 && folders[0].name === 'DeepSeek' && folders[0].count === '2' &&
+        folders[1].name === 'Z.ai' && folders[1].count === '1' &&
+        folders.every((folder) => folder.chevron === true),
+      JSON.stringify(folders))
+    check('the folder holding the model in force is the marked one',
+      folders.length === 2 && folders[1].selected === true && folders[0].selected === false,
+      JSON.stringify(folders.map((folder) => ({ name: folder.name, selected: folder.selected }))))
+    check('the folders are drawn as one row each, all of the same height',
+      folders.length === 2 && folders[0].height >= 28 && folders[0].height === folders[1].height,
+      JSON.stringify(folders.map((folder) => folder.height)))
+    check('level 1 carries no model row of its own: the models sit behind their folder',
+      levelOne.length === 1 && one['GLM-5.3'] !== undefined,
       JSON.stringify(levelOne.map((row) => row.name)))
-    check('the seat\'s row is the current one and the last of that level',
-      meter.currentRow !== null && meter.currentRow !== undefined && meter.currentRow.current === true && meter.currentRow.name === 'GLM-5.3',
-      JSON.stringify(meter.currentRow))
-    check('the seat\'s own row carries the meter too, with the rate in force on it',
+    check('the quick providers sit above the rule and the rest below it',
+      folders.length === 2 && folders[0].name === 'DeepSeek' && (meter.rules || []).indexOf('All providers') !== -1,
+      JSON.stringify({ folders: folders.map((folder) => folder.name), rules: meter.rules }))
+    check('the model in force is named under the folders, behind a rule of its own',
+      meter.currentRow !== null && meter.currentRow !== undefined && meter.currentRow.current === true && meter.currentRow.name === 'GLM-5.3' &&
+        (meter.rules || []).length === 2 && meter.rules[1] === 'Current model',
+      JSON.stringify({ rules: meter.rules, current: meter.currentRow === null || meter.currentRow === undefined ? null : meter.currentRow.name }))
+    check('the named row carries the meter with the rate in force on it',
       meter.currentRow !== null && meter.currentRow !== undefined && meter.currentRow.meter !== null &&
         meter.currentRow.meter.period === 'campaign' && meter.currentRow.meter.value === '0.5×' && meter.currentRow.meter.icon,
       JSON.stringify(meter.currentRow === null || meter.currentRow === undefined ? null : meter.currentRow.meter))
-    check('an official model a profile claims carries its rate and its countdown',
-      one['V4.1 Flash'] !== undefined && one['V4.1 Flash'].meter !== null &&
-        (one['V4.1 Flash'].meter.period === 'peak' || one['V4.1 Flash'].meter.period === 'offPeak') &&
-        (one['V4.1 Flash'].meter.value === '2×' || one['V4.1 Flash'].meter.value === '1×') &&
-        /^· \d+[mhd]/.test(one['V4.1 Flash'].meter.countdown),
-      JSON.stringify(one['V4.1 Flash'] === undefined ? null : one['V4.1 Flash'].meter))
-    check('a model no profile claims carries nothing at all',
-      one['Kimi K3'] !== undefined && one['Kimi K3'].meter === null,
-      JSON.stringify(one['Kimi K3']))
     check('every meter stands immediately in front of its row\'s check, and names its judgement',
       levelOne.every((row) => row.meter === null || (row.meter.beforeCheck === true && row.meter.title !== null && row.meter.title !== '')),
       JSON.stringify(levelOne.map((row) => row.meter === null ? null : { beforeCheck: row.meter.beforeCheck, title: row.meter.title })))
-    const listed = one['V4.1 Flash']
-    check('the seat\'s row is drawn as the list rows are: same height, padding, radius and layout',
-      meter.currentRow !== null && meter.currentRow !== undefined && listed !== undefined &&
-        same(meter.currentRow.box, listed.box),
+    check('a folder opened by the reader is marked open',
+      meter.openedMarked === true && meter.openedFolder === 'DeepSeek',
+      JSON.stringify({ opened: meter.openedFolder, marked: meter.openedMarked }))
+    check('the second card holds the models of the folder that was opened, headed by that provider',
+      two['GLM-5.3'] === undefined && two['V4.1 Flash'] !== undefined && two['Kimi K3'] !== undefined && (meter.levelTwo || []).length === 2,
+      JSON.stringify((meter.levelTwo || []).map((row) => row.name)))
+    check('the second card carries the same meter on its rows',
+      two['V4.1 Flash'] !== undefined && two['V4.1 Flash'].meter !== null &&
+        (two['V4.1 Flash'].meter.period === 'peak' || two['V4.1 Flash'].meter.period === 'offPeak') &&
+        (two['V4.1 Flash'].meter.value === '2×' || two['V4.1 Flash'].meter.value === '1×') &&
+        /^· \d+[mhd]/.test(two['V4.1 Flash'].meter.countdown) &&
+        two['V4.1 Flash'].meter.beforeCheck === true &&
+        two['Kimi K3'] !== undefined && two['Kimi K3'].meter === null,
+      JSON.stringify({ flash: two['V4.1 Flash'] === undefined ? null : two['V4.1 Flash'].meter, kimi: two['Kimi K3'] === undefined ? null : two['Kimi K3'].meter }))
+    const listed = one['GLM-5.3']
+    check('the named row is drawn as a row of the list: same height, padding, radius and layout',
+      listed !== undefined && meter.currentRow !== undefined && same(meter.currentRow.box, listed.box),
       JSON.stringify({ current: meter.currentRow === null || meter.currentRow === undefined ? null : meter.currentRow.box, listed: listed === undefined ? null : listed.box }))
-    check('the second level carries the same meter on its rows',
-      two['GLM-5.3'] !== undefined && two['GLM-5.3'].meter !== null &&
-        two['GLM-5.3'].meter.period === 'campaign' && two['GLM-5.3'].meter.value === '0.5×' &&
-        two['GLM-5.3'].meter.beforeCheck === true,
-      JSON.stringify(two['GLM-5.3'] === undefined ? null : two['GLM-5.3'].meter))
   },
 }

@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-09",
+  "group": "fixes",
+  "order": 0,
+  "external": false,
+  "zh": "工作强度滑杆左端那一级上，卡片上多出一个孤零零的亮像素：刻度点按停位居中落在滑槽中线，而滑槽的圆角把它顶角切掉了，于是那一行点露在槽外。这一层刻度现在按滑槽自己的圆角裁剪，点不再越界。工作强度在最高一档时，输入框那一行的档位名称也跟着卡片里的名称一起变成紫色，并带一层和滑杆同规格的柔光。",
+  "en": "A lone light pixel showed above the reasoning-effort groove's left end: the end stop's tick dot is centred on the groove's midline, and the groove's rounded corner cut its top corner away, leaving one row of the dot outside the groove. The tick layer is now clipped to the groove's own rounded box, so the dots stay inside it. At the top rung the level's name in the composer's row also takes the same violet as the card's, with a soft glow in the slider's own measure."
+}

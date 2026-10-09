@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-09",
+  "group": "improvements",
+  "order": 1,
+  "external": false,
+  "zh": "权限档位采用 Claude Code 的 Plan、Accept edits、Auto 与 Bypass permissions 名称，并将说明改为英文；浏览器专用的 Yolo 档位在宿主目录提供 `full-access-ask` 时显示在新会话页与会话权限菜单中，宿主不提供时整项隐藏。",
+  "en": "Permission tiers use Claude Code's Plan, Accept edits, Auto and Bypass permissions labels, with English descriptions. The browser-specific Yolo tier appears on the new-conversation page and in a session's permission menu when the host catalog offers `full-access-ask`; it stays hidden when the host does not offer it."
+}

@@ -1,6 +1,6 @@
 {
   "name": "dsh-claude-style",
-  "description": "Claude Code Desktop theme for DeepSeek Harness (dsh) web GUI — visual & interaction overhaul",
+  "description": "DSH Claude Style: a desktop theme and session toolkit for DeepSeek Harness, with two palettes and custom model, permission, and composer controls.",
   "version": "0.12.0",
   "type": "module",
   "main": "lib/host/index.js",
@@ -70,14 +70,14 @@
     "editorial"
   ],
   "license": "MIT",
-  "author": "Nwflower",
+  "author": "supraskyline911-prog",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nwflower/dsh-claude-style.git"
+    "url": "git+https://github.com/supraskyline911-prog/dsh-claude-style.git"
   },
-  "homepage": "https://github.com/Nwflower/dsh-claude-style#readme",
+  "homepage": "https://github.com/supraskyline911-prog/dsh-claude-style#readme",
   "bugs": {
-    "url": "https://github.com/Nwflower/dsh-claude-style/issues"
+    "url": "https://github.com/supraskyline911-prog/dsh-claude-style/issues"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-alpha.1",

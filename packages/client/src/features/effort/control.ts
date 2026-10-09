@@ -600,6 +600,9 @@ export function createEffortControl(opts: {
   return {
     el: root,
     update,
+    // The picker's trigger reads the same apex state the slider paints from,
+    // so its level name carries the top rung's colour in the composer's row too.
+    apex() { return apexOn },
     // The picker's hover-close guard keys on the PHYSICAL hold: from
     // pointerdown until the real release, wherever it lands. `pressed`
     // ends earlier — at the boundary settle — which is exactly when the

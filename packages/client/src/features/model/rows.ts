@@ -4,24 +4,31 @@ import { readPrefs } from '../../core/prefs'
 import { buildModelLabel, modelBrand } from './brand'
 import { modelDescription } from './copy-lookup'
 import { buildElement } from '../../shared/dom'
-import { POPOVER_CHECK_SVG, buildPopoverItem } from '../../shared/popover'
-import type { createHoverIntent } from '../../shared/popover'
+import { POPOVER_CHECK_SVG, POPOVER_CLOSE_DELAY, POPOVER_OPEN_DELAY, buildPopoverItem, createHoverIntent } from '../../shared/popover'
 import type { HostContext } from '../../core/host'
 import type { HostModelEntry, HostModelGroup } from '@dsh-claude-style/contracts/services'
 
 /**
- * Model picker rows: the row/cell builders and the two level-1 list
- * selectors.
+ * Model picker rows: the row builders, the provider folders of the first level
+ * and the order they are listed in.
  *
  * Split out of the model picker's install (packages/client/src/features/model/model-picker.ts); this
  * fragment is the row half of that feature. createModelRows reaches the
  * feature's closure only through its options: ctx (the copy lookup),
- * pickModel(provider, modelId) (commit a row), subHoverIntent (the
- * More-models dwell/grace), and isSubOpen() / closeSub() / openSub() (the
- * second level's state). The two SVG strings and byModelId are pure and
- * stay at the fragment's top level.
+ * pickModel(provider, modelId) (commit a row), closeIfAway (the picker's own
+ * leave handling), and subProvider() / closeSub() / openSub(providerId) (the
+ * second level's state). The two SVG strings, byModelId and the shared delays
+ * are pure and stay at the fragment's top level.
  */
 export const MODEL_CHEVRON_SVG = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>'
+
+/**
+ * The picker is two cards wide, and the second card only cancels a pending
+ * close once the pointer is ON it — so the grace has to cover the journey from
+ * a folder row, across the gap, onto that card. At the shared 100ms a slow
+ * traverse ran it out and both cards folded up mid-journey.
+ */
+export const MODEL_CLOSE_DELAY = 150
 
 /** Catalog order is whatever the provider happened to send; id order is scannable. */
 export function byModelId(a: HostModelEntry, b: HostModelEntry) {
@@ -33,32 +40,32 @@ export function byModelId(a: HostModelEntry, b: HostModelEntry) {
 export function createModelRows(options: {
   ctx: HostContext
   pickModel: (provider: string, modelId: string) => void
-  subHoverIntent: ReturnType<typeof createHoverIntent>
-  isSubOpen: () => boolean
+  closeIfAway: () => void
+  subProvider: () => string | null
   closeSub: () => void
-  openSub: () => void
+  openSub: (providerId: string) => void
   /** The peak rate meter's badge for one row, or null (features/peakrate). */
   rate: (provider: string, modelId: string) => HTMLElement | null
 }) {
   const ctx = options.ctx
   const pickModel = options.pickModel
-  const subHoverIntent = options.subHoverIntent
-  const isSubOpen = options.isSubOpen
+  const closeIfAway = options.closeIfAway
+  const subProvider = options.subProvider
   const closeSub = options.closeSub
   const openSub = options.openSub
   const rate = options.rate
 
-  /**
-   * The rule that separates one provider's models from the next. The provider
-   * name rides the rule itself rather than trailing the model in parentheses:
-   * one quiet line above the group says who serves it, and the model names
-   * stay clean.
-   */
-  function buildProviderRule(name: string) {
-    const rule = buildElement('div', 'dsh-claude-model-rule')
-    if (name) rule.appendChild(buildElement('span', 'dsh-claude-model-rule-name', name))
-    return rule
-  }
+  /** One folder's dwell/grace: the same numbers the trigger and every other row use. */
+  const folderHoverIntent = createHoverIntent(
+    () => {
+      const providerId = folderHoverProvider
+      if (providerId !== null) openSub(providerId)
+    },
+    closeIfAway,
+    POPOVER_OPEN_DELAY,
+    MODEL_CLOSE_DELAY
+  )
+  let folderHoverProvider: string | null = null
 
   /**
    * One model row, the skeleton every level builds from: brand mark, name, an
@@ -120,83 +127,103 @@ export function createModelRows(options: {
     return buildModelRow(group, model, true, true, () => { closeSub() })
   }
 
-  /** The More-models row: label + chevron, hover opens the second level. */
-  function buildModelCell(label: string) {
-    const cell = buildElement('button', 'dsh-claude-model-cell')
+  /**
+   * One provider, as a folder on the first level: its name, how many models it
+   * carries, a check when one of them is in force, and a chevron. Hovering
+   * opens that provider's models in the second card; a click toggles it, so a
+   * pointer that never dwells can still drill in.
+   */
+  function buildProviderFolder(group: HostModelGroup, selected: boolean, open: boolean) {
+    const cell = buildElement('button', 'dsh-claude-model-cell dsh-claude-model-folder')
     cell.type = 'button'
     cell.setAttribute('role', 'menuitem')
-    cell.appendChild(buildElement('span', 'dsh-claude-model-cell-label', label))
+    cell.setAttribute('aria-haspopup', 'menu')
+    cell.setAttribute('aria-checked', selected ? 'true' : 'false')
+    if (open) cell.setAttribute('data-open', 'true')
+    cell.appendChild(buildElement('span', 'dsh-claude-model-cell-label', group.name || group.id))
+    cell.appendChild(buildElement('span', 'dsh-claude-model-cell-count', String(group.models.length)))
     const chevron = buildElement('span', 'dsh-claude-model-cell-chevron')
     chevron.innerHTML = MODEL_CHEVRON_SVG
     cell.appendChild(chevron)
+    // The provider in force carries the same accent check every model row
+    // uses, in the same slot: without a mark the folder only differs from the
+    // rest by an attribute no reader sees.
+    const check = buildElement('span', 'dsh-claude-popover-check')
+    if (selected) check.innerHTML = POPOVER_CHECK_SVG
+    cell.appendChild(check)
     cell.addEventListener('mouseenter', () => {
-      if (readPrefs().autoPopover === AUTO_POPOVER_ALL) subHoverIntent.scheduleOpen()
+      folderHoverProvider = group.id
+      if (readPrefs().autoPopover === AUTO_POPOVER_ALL) folderHoverIntent.scheduleOpen()
     })
     cell.addEventListener('mouseleave', () => {
-      // A pointer that only crossed the cell must not drill in behind it.
-      subHoverIntent.cancel()
+      // A pointer that only crossed the folder must not drill in behind it.
+      folderHoverIntent.cancel()
     })
     cell.addEventListener('click', e => {
       e.stopPropagation()
-      if (isSubOpen()) closeSub()
-      else openSub()
+      if (subProvider() === group.id) closeSub()
+      else openSub(group.id)
     })
     return cell
   }
 
   /**
-   * The providers level 1 lists: the official service first, then the quick
-   * providers the settings page picked. Only when the catalog has no
-   * (non-empty) official service at all does the list fall back to the
-   * picked providers, and with none picked to every provider.
+   * The rule that separates one provider's folders from the next: the quick
+   * providers sit above it, the rest below, so one quiet line carries the whole
+   * jump. It is drawn only when there is something on both sides of it.
    */
-  function levelOneSections(groups: HostModelGroup[]) {
-    const sections: HostModelGroup[] = []
+  function buildProviderRule(name: string) {
+    const rule = buildElement('div', 'dsh-claude-model-rule')
+    if (name) rule.appendChild(buildElement('span', 'dsh-claude-model-rule-name', name))
+    return rule
+  }
+
+  /**
+   * The providers level 1 lists, in the order it lists them: the official
+   * service first, then the quick providers the settings page picked, then
+   * everything else. A provider with no models is not a folder at all.
+   */
+  function providerFolders(groups: HostModelGroup[]) {
+    const folders: HostModelGroup[] = []
     const chosen = readPrefs().quickProviders
     for (let g0 = 0; g0 < groups.length; g0++) {
       if (groups[g0].id === MODEL_OFFICIAL_GROUP && groups[g0].models.length > 0) {
-        sections.push(groups[g0])
+        folders.push(groups[g0])
         break
       }
     }
     for (let g2 = 0; g2 < groups.length; g2++) {
       if (!chosen.includes(groups[g2].id) || groups[g2].id === MODEL_OFFICIAL_GROUP || groups[g2].models.length === 0) continue
-      sections.push(groups[g2])
+      folders.push(groups[g2])
     }
-    if (sections.length === 0) {
-      for (let g4 = 0; g4 < groups.length; g4++) {
-        if (groups[g4].models.length > 0) sections.push(groups[g4])
-      }
+    for (let g4 = 0; g4 < groups.length; g4++) {
+      if (folders.indexOf(groups[g4]) !== -1) continue
+      if (groups[g4].models.length > 0) folders.push(groups[g4])
     }
-    return sections
+    return folders
   }
 
   /**
-   * The provider groups level 1 does NOT show — which is exactly what level 2
-   * is for. Repeating a provider across the two cards made the same models
-   * appear twice, one card apart.
-   *
-   * Only a GROUP counts as shown. The seat level 1 surfaces as a row of its
-   * own does not: that row carries one model, not the provider, so hiding the
-   * provider's remaining models behind it would strand them.
+   * How many of the folders are quick providers, which is where the rule
+   * between the two halves goes: everything after that count sits below it.
    */
-  function remainingGroups(groups: HostModelGroup[], sections: HostModelGroup[]) {
-    const shown: Record<string, boolean> = {}
-    for (let i = 0; i < sections.length; i++) shown[sections[i].id] = true
-    const out: HostModelGroup[] = []
-    for (let g = 0; g < groups.length; g++) {
-      if (groups[g].models.length === 0 || shown[groups[g].id] === true) continue
-      out.push(groups[g])
+  function quickFolderCount(groups: HostModelGroup[]) {
+    const chosen = readPrefs().quickProviders
+    const folders = providerFolders(groups)
+    let count = 0
+    for (let i = 0; i < folders.length; i++) {
+      if (folders[i].id === MODEL_OFFICIAL_GROUP || chosen.includes(folders[i].id)) count++
+      else break
     }
-    return out
+    return count
   }
 
   return {
     buildProviderRule,
+    buildProviderFolder,
     buildModelOption,
     buildCurrentOption,
-    buildModelCell,
-    levelOneSections,
-    remainingGroups
+    providerFolders,
+    quickFolderCount
   }
 }

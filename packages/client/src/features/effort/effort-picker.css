@@ -146,10 +146,20 @@ body[data-dsh-claude-style] .dsh-claude-effort-fill {
 }
 /* One tick per stop, centred on the stop's resting position (the override
    computes the px). Same ink as the fill: the fill swallows passed ticks, the
-   knob swallows the current one, so a tick only ever shows on bare track. */
+   knob swallows the current one, so a tick only ever shows on bare track.
+   The layer is clipped to the groove's own rounded box: the end stops sit ON
+   the track's edges, where a 4px dot's top corner lands on the 8px radius and
+   pokes out above it as a lone light speck on the card wash. */
 body[data-dsh-claude-style] .dsh-claude-effort-ticks {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 26px;
+  margin-top: -13px;
+  border-radius: 8px;
+  corner-shape: round;
+  overflow: hidden;
   transition: opacity 0.18s ease;
   pointer-events: none;
 }
@@ -365,4 +375,17 @@ body[data-dsh-claude-style] .dsh-claude-effort-btn {
 body[data-dsh-claude-style] .dsh-claude-effort-btn:hover {
   background: var(--dsh-claude-hover-bg, rgba(0, 0, 0, 0.08));
   color: var(--dsw-alias-label-primary, #141413);
+}
+/* On the top rung the level's name in the composer's row takes the same violet
+   the card's does, with a glow in the slider's own measure: the row sits on the
+   canvas with no knob next to it, so the tint alone read as a hover state.
+   The label transitions; the button's own colour transition is what carries the
+   hover back down, and is left alone. */
+body[data-dsh-claude-style] .dsh-claude-effort-btn[data-apex] .dsh-claude-effort-btn-label {
+  color: var(--dsh-claude-apex-ink, #5f51b5);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--dsh-claude-apex, #8b7ad0) 45%, transparent);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+body[data-dsh-claude-style] .dsh-claude-effort-btn .dsh-claude-effort-btn-label {
+  transition: color 0.3s ease, text-shadow 0.3s ease;
 }

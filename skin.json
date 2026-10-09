@@ -1,7 +1,7 @@
 {
   "id": "claude-style",
-  "name": "Claude Code Style",
-  "tagline": "Claude Code Desktop 深度定制化主题",
+  "name": "DSH Claude Style",
+  "tagline": "为 DeepSeek Harness 打造的双配色桌面主题与会话工具",
   "accent": "#d97757",
   "bodyAttr": "data-dsh-claude-style",
   "package": "dsh-claude-style",

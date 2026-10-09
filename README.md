@@ -2,17 +2,15 @@
 
 # DSH Claude Style
 
-**为 DeepSeek Harness 复刻 Claude Code Desktop 风格与交互体验的主题插件。**
+**为 DeepSeek Harness 打造的桌面主题与会话工具，由 [@supraskyline911-prog](https://github.com/supraskyline911-prog) 维护。**
 
-> **在 DSH 里，就是 Claude Code Desktop 的样子。**
+> **双配色工作台，配上专为 DSH 设计的模型、权限与会话控件。**
 
 [![简体中文](https://img.shields.io/badge/lang-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-red.svg)](README.md) [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.en.md)
 
-[![version](https://img.shields.io/npm/v/dsh-claude-style?style=flat&label=version&color=D97757)](https://www.npmjs.com/package/dsh-claude-style)
-[![downloads](https://img.shields.io/npm/dm/dsh-claude-style?style=flat&label=downloads&color=D97757)](https://www.npmjs.com/package/dsh-claude-style)
-[![GitHub stars](https://img.shields.io/github/stars/Nwflower/dsh-claude-style?style=flat&label=%E2%98%85&color=08C)](https://github.com/Nwflower/dsh-claude-style)
-[![dsh.so install](https://www.dsh.so/badge/install/dsh-claude-style.svg)](https://www.dsh.so/artifact/dsh-claude-style/)
-[![license](https://img.shields.io/badge/license-MIT-2EA44F?style=flat)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/supraskyline911-prog/dsh-claude-style?style=flat&label=%E2%98%85&color=D97757)](https://github.com/supraskyline911-prog/dsh-claude-style)
+[![maintainer](https://img.shields.io/badge/maintainer-supraskyline911--prog-D97757?style=flat)](https://github.com/supraskyline911-prog)
+[![license](https://img.shields.io/badge/license-MIT-D97757?style=flat)](LICENSE)
 
 </div>
 
@@ -67,19 +65,11 @@
 
 ## 安装
 
-1. 官方插件页，添加以下插件即可快速安装
-
-```
-dsh-claude-style
-```
-
-2. 通过终端安装
+从 GitHub 安装本仓库版本：
 
 ```bash
-dsh plugin --profile web add dsh-claude-style                  # npm 包（推荐）
+dsh plugin --profile web add supraskyline911-prog/dsh-claude-style
 ```
-
-3. 通过[插件市场](https://github.com/dsh-market/dsh-market)安装
 
 同一时刻建议只启用一个主题。安装后推荐重启 `DeepSeek Harness`以获得完整能力。
 
@@ -97,11 +87,11 @@ dsh plugin --profile web add dsh-claude-style                  # npm 包（推�
 
 | 字体 | 用途 | 文件 |
 |---|---|---|
-| Anthropic Sans Web Text | 界面 / UI | [`packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf) |
-| Anthropic Serif Web Text | 对话正文 / Markdown | [`packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf) |
-| JetBrains Mono Variable | 代码 / 代码块 | [`packages/assets/src/fonts/JetBrainsMonoVariable.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/JetBrainsMonoVariable.ttf)、[`packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf) |
-| Inter | 没有 Anthropic Sans 时的界面字体 | [`packages/assets/src/fonts/InterVariable.woff2`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/InterVariable.woff2) |
-| Noto Serif | 没有 Anthropic Serif 时的正文字体 | [`packages/assets/src/fonts/NotoSerifVariable.woff2`](https://github.com/Nwflower/dsh-claude-style/raw/main/packages/assets/src/fonts/NotoSerifVariable.woff2) |
+| Anthropic Sans Web Text | 界面 / UI | [`packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/anthropic/AnthropicSansWebText.ttf) |
+| Anthropic Serif Web Text | 对话正文 / Markdown | [`packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/anthropic/AnthropicSerifWebText.ttf) |
+| JetBrains Mono Variable | 代码 / 代码块 | [`packages/assets/src/fonts/JetBrainsMonoVariable.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/JetBrainsMonoVariable.ttf)、[`packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/JetBrainsMonoItalicVariable.ttf) |
+| Inter | 没有 Anthropic Sans 时的界面字体 | [`packages/assets/src/fonts/InterVariable.woff2`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/InterVariable.woff2) |
+| Noto Serif | 没有 Anthropic Serif 时的正文字体 | [`packages/assets/src/fonts/NotoSerifVariable.woff2`](https://github.com/supraskyline911-prog/dsh-claude-style/raw/master/packages/assets/src/fonts/NotoSerifVariable.woff2) |
 
 JetBrains Mono、Inter 与 Noto Serif 采用 SIL Open Font License 1.1，随 npm 包分发，无需任何操作。Inter 与 Noto Serif 的字高、字宽与两款 Anthropic 字体几乎一致，没有启用 Anthropic 字体时由它们代替，界面与正文的排版不会因此变样；两者只含 Anthropic 字体覆盖的拉丁字符，中文照旧使用系统中文字体。
 
@@ -143,8 +133,8 @@ Anthropic 字体启用（二选一）：
 
 ## 友链
 
-> 想把 Claude Code / Codex 等外部代理的会话历史导入 DSH 接着聊？推荐作者的另一个插件 [dsh-chat-import](https://github.com/Nwflower/dsh-chat-import)。
+> 想把 Claude Code / Codex 等外部代理的会话历史导入 DSH 接着聊？可以看看 [dsh-chat-import](https://github.com/Nwflower/dsh-chat-import)。
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Nwflower/dsh-claude-style&type=Date)](https://star-history.com/#Nwflower/dsh-claude-style&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=supraskyline911-prog/dsh-claude-style&type=Date)](https://star-history.com/#supraskyline911-prog/dsh-claude-style&Date)

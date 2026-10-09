@@ -1,7 +1,8 @@
 /**
  * The model directory the model-meter page reads: two provider groups, with the
- * model in force sitting in the group level 1 does not list — the case that
- * makes the picker append the seat's own row at the bottom of that level.
+ * model in force sitting in the group the quick list does not name — so level 1
+ * lists that provider as a folder of its own and names the model in force under
+ * the list.
  *
  * The ids are the ones the rate catalog's alias table knows, so one row of each
  * kind is on the page: a model a profile claims, a model no profile claims, and

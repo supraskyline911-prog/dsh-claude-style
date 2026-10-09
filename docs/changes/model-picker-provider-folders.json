@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-09",
+  "group": "improvements",
+  "order": 0,
+  "external": true,
+  "zh": "模型选择器的第一级改成文件夹列表：每个供应商一行，带名称、模型数量、当前选中的标记与展开箭头，悬停或点击在旁边的第二张卡片里展开该供应商的模型。官方服务与设置里勾选的快捷供应商排在前面，其余供应商在分隔线之下；列表底部以「当前模型」命名在用的那一行，取代了过去的「更多模型」行。设置页的「快捷供应商」说明随之改写为文件夹的说法。",
+  "en": "The model picker's first level is now a list of folders: one row per provider, with its name, its model count, a mark on the one in use and a disclosure chevron, and hovering or clicking a folder opens that provider's models in the second card beside it. The official service and the quick providers picked in the settings lead the list, the rest sit below the rule, and the model in force is named at the bottom behind a Current model rule, replacing the More models row. The settings page's Quick providers description now speaks of folders."
+}

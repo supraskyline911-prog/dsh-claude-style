@@ -26,5 +26,8 @@ export const MODEL_EFFORT_FASTER = 'Faster'
 export const MODEL_EFFORT_SMARTER = 'Smarter'
 /** What the slider reads when the model offers no levels at all. */
 export const MODEL_EFFORT_NONE = '—'
-export const MODEL_MORE_LABEL = 'More models'
+/** The rule between the quick providers and the rest of the folders. */
+export const MODEL_ALL_PROVIDERS_LABEL = 'All providers'
+/** The rule above the model in force, named at the bottom of level 1. */
+export const MODEL_CURRENT_LABEL = 'Current model'
 export const MODEL_TRIGGER_LABEL = 'Select model, currently {model}'

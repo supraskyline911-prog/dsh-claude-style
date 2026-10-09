@@ -7,11 +7,12 @@
  * host offers is ever hidden and a machine id is never shown.
  */
 export const PERMISSION_PRESETS: Record<string, { label: string, desc: string }> = {
-  'read-only': { label: 'Read only', desc: '仅读取文件与分析，不修改代码' },
-  'workspace-write': { label: 'Accept edits', desc: '允许编辑工作区文件' },
-  'auto-mode': { label: 'Auto mode', desc: '规则放行常规操作，其余由分类器裁决' },
-  'auto': { label: 'Auto review', desc: '无沙箱运行，调用前由模型审查' },
-  'danger-full-access': { label: 'Full access', desc: '自动执行，无需反复确认' }
+  'read-only': { label: 'Plan', desc: 'Read and explore without changing files.' },
+  'workspace-write': { label: 'Accept edits', desc: 'Allow edits within the workspace.' },
+  'auto-mode': { label: 'Auto', desc: 'Routine actions are allowed; a classifier reviews the rest.' },
+  'auto': { label: 'Auto review', desc: 'Runs without a sandbox; the model reviews each call.' },
+  'danger-full-access': { label: 'Bypass permissions', desc: 'Run without permission prompts.' },
+  'full-access-ask': { label: 'Yolo (browser)', desc: 'Full file access; browser actions run without prompts.' }
 }
 
 /**
@@ -21,14 +22,15 @@ export const PERMISSION_PRESETS: Record<string, { label: string, desc: string }>
  * offers is not drawn at all.
  */
 export const PERMISSION_SEGMENTS = [
-  { label: 'Read', presets: ['read-only'] },
-  { label: 'Edit', presets: ['workspace-write'] },
+  { label: 'Plan', presets: ['read-only'] },
+  { label: 'Accept edits', presets: ['workspace-write'] },
   { label: 'Auto', presets: ['auto-mode', 'auto'] },
-  { label: 'Yolo', presets: ['danger-full-access'] }
+  { label: 'Bypass permissions', presets: ['danger-full-access'] },
+  { label: 'Yolo (browser)', presets: ['full-access-ask'] }
 ]
 
 /** Popover row order; a preset the host offers but this list does not know follows in catalog order. */
-export const PERMISSION_ORDER = ['read-only', 'workspace-write', 'auto-mode', 'auto', 'danger-full-access']
+export const PERMISSION_ORDER = ['read-only', 'workspace-write', 'auto-mode', 'auto', 'danger-full-access', 'full-access-ask']
 
 /**
  * What the control draws before the host's first catalog read settles: the

@@ -10,6 +10,8 @@
     "effortFaster": { "zh": "更快", "en": "Faster" },
     "effortSmarter": { "zh": "更强", "en": "Smarter" },
     "moreLabel": { "zh": "更多模型", "en": "More models" },
+    "allProvidersLabel": { "zh": "全部供应商", "en": "All providers" },
+    "currentLabel": { "zh": "当前模型", "en": "Current model" },
     "ratePeak": { "zh": "峰价", "en": "Peak rate" },
     "rateOffPeak": { "zh": "谷价", "en": "Off-peak rate" },
     "rateCampaign": { "zh": "活动价", "en": "Promotion" },
@@ -187,8 +189,8 @@
     },
     "quickTitle": { "zh": "快捷供应商", "en": "Quick providers" },
     "quickDesc": {
-      "zh": "在一级列表展示勾选的供应商。",
-      "en": "Picked providers follow the official service in the picker's first level, one rule between providers. A provider removed from the catalog stays in the list marked \"Removed\"; uncheck it to clear it."
+      "zh": "勾选的供应商文件夹排在选择器第一级的前面，其余供应商在分隔线之下。",
+      "en": "The folders of picked providers lead the picker's first level; the rest sit below the rule. A provider removed from the catalog stays in the list marked \"Removed\"; uncheck it to clear it."
     },
     "quickNone": { "zh": "未选择", "en": "None" },
     "quickCount": { "zh": "{count} 个供应商", "en": "{count} providers" },
