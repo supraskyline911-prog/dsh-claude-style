@@ -41,7 +41,6 @@ export interface ListSummary {
 export interface HeatCell {
   date: string
   tokens: number
-  messages: number | null
   level: number
 }
 
@@ -409,16 +408,9 @@ export function createHomeUsage(ctx: HostContext) {
  */
 export function homeHeatGrid(days: UsageDay[] | null | undefined) {
   const byDate: Record<string, number> = {}
-  const callsByDate: Record<string, number> = {}
   const list = days === null || days === undefined ? [] : days
-  // A day's messages are its settled calls; the session list's fallback has
-  // no per-day count, so its cells carry none.
-  let counted = true
   for (let i = 0; i < list.length; i++) {
     byDate[list[i].date] = homeDayTokens(list[i])
-    const calls = list[i].calls
-    if (typeof calls === 'number') callsByDate[list[i].date] = calls
-    else counted = false
   }
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -431,7 +423,7 @@ export function homeHeatGrid(days: UsageDay[] | null | undefined) {
     const key = homeDayKey(cursor)
     const tokens = byDate[key] || 0
     if (tokens > peak) peak = tokens
-    cells.push({ date: key, tokens, messages: counted ? callsByDate[key] || 0 : null, level: 0 })
+    cells.push({ date: key, tokens, level: 0 })
   }
   for (let c = 0; c < cells.length; c++) {
     if (cells[c].tokens === 0 || peak === 0) continue

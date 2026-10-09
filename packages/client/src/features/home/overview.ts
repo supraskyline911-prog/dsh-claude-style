@@ -29,14 +29,9 @@ export function createHomeOverview() {
   /** Columns at each end of the grid whose tip pill lines up with its cell's outer edge. */
   const HOME_TIP_EDGE = 3
 
-  /**
-   * A heat cell's tip, Claude Code's own: the day and its messages,
-   * "Sep 9 — 15,955". The session list's fallback has no per-day message
-   * count, so its cells name their tokens instead.
-   */
+  /** A heat cell's tip: the day and its tokens, "Sep 9 — 1.2M tokens". */
   function heatTip(format: Intl.DateTimeFormat, cell: HeatCell) {
     const date = homeShortDate(format, cell.date)
-    if (cell.messages !== null) return `${date} — ${formatHomeCount(cell.messages)}`
     return copyLabel('homeHeatTipTokens', '{date} — {tokens} tokens', { date, tokens: formatCompactTokens(cell.tokens) })
   }
 

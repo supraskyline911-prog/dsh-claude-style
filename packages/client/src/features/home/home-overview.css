@@ -74,7 +74,7 @@ body[data-dsh-claude-style] .dsh-claude-home-heat-cell {
 }
 
 /* Claude Code's day tip: a solid pill in the label ink over the cell, the day
-   and its messages in the canvas tone, so it inverts with the theme on its own.
+   and its tokens in the canvas tone, so it inverts with the theme on its own.
    It appears the moment the pointer is on the cell, and never takes the
    pointer itself. */
 body[data-dsh-claude-style] .dsh-claude-home-heat-cell[data-tip]:hover::after {
